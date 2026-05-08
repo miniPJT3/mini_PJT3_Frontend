@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Header from './components/Header';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Home from './pages/user/Home'; // 추가
+import Home from './pages/user/Home';
 import Payment from './pages/user/Payment';
 import VirtualAccount from './pages/user/VirtualAccount';
 import PaymentHistory from './pages/user/PaymentHistory';
@@ -16,15 +16,21 @@ function App() {
         <Header />
         <main className="container mx-auto px-4 py-8">
           <Routes>
-            {/* 로그인 안 된 상태면 로그인으로, 로그인 상태면 /home으로 보내는 로직이 보통 들어감 */}
+            {/* 기본 시작 경로 */}
             <Route path="/" element={<Navigate to="/login" />} />
             
-            <Route path="/home" element={<Home />} /> {/* 추가 */}
+            {/* 공통 페이지 */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/payment" element={<Payment />} />
-            <Route path="/virtual-account" element={<VirtualAccount />} />
-            <Route path="/history" element={<PaymentHistory />} />
+
+            {/* 사용자(User) 전용 경로 그룹화 */}
+            <Route path="/user">
+              <Route path="home" element={<Home />} />
+              <Route path="payment" element={<Payment />} />
+              <Route path="virtual-account" element={<VirtualAccount />} />
+              <Route path="history" element={<PaymentHistory />} />
+            </Route>
+            
           </Routes>
         </main>
       </div>

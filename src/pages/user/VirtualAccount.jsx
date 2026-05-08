@@ -1,11 +1,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { paymentApi } from "../../api/paymentApi";
 
 const VirtualAccount = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Payment 페이지에서 전달받은 데이터 (없을 경우를 대비해 기본값 설정)
   const { 
     payUuid = "발급 오류", 
     maskedAccount = "000-000-00000", 
@@ -13,13 +13,28 @@ const VirtualAccount = () => {
     productName = "선택 상품 없음" 
   } = location.state || {};
 
-  // 입금 확인 처리 함수(가상)
-  const handleDepositConfirm = () => {
-    // 1. 입금 완료 알림
-    alert(`${productName} 입금이 완료되었습니다! 결제 내역으로 이동합니다.`);
+  // 입금 확인 처리 함수 (실제 백엔드 호출)
+  const handleDepositConfirm = async () => {
+    try {
+      // 1. 서버에 입금 확인 요청
+      const depositData = {
+        payUuid: payUuid,
+        depositedAmount: depositedAmount,
+        productName: productName,
+        transactionId: `TX_CONFIRM_${Date.now()}` // 가상의 트랜잭션 ID 생성
+      };
 
-    // 2. 결제 내역 페이지로 이동 (필요 시 홈 '/home'으로 변경 가능)
-    navigate('/history');
+      const response = await paymentApi.confirmDeposit(depositData);
+
+      if (response.status === 200) {
+        alert(`${productName} 입금이 완료되었습니다! 결제 내역으로 이동합니다.`);
+        // 2. 성공 시 결제 내역 페이지로 이동
+        navigate('/user/history');
+      }
+    } catch (error) {
+      console.error("입금 처리 중 오류 발생:", error);
+      alert(error.response?.data?.message || "입금 처리에 실패했습니다. 금액을 확인해주세요.");
+    }
   };
 
   return (
@@ -78,7 +93,7 @@ const VirtualAccount = () => {
 
           <div className="flex gap-3 pt-4">
             <button 
-              onClick={() => navigate('/home')}
+              onClick={() => navigate('/user/home')}
               className="flex-1 py-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all"
             >
               홈으로 이동

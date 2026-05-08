@@ -8,14 +8,9 @@ const api = axios.create({
 
 export const paymentApi = {
   // 발급 요청
-  issueAccount: (data) => api.post('/payments/issue', {
-    productName: data.productName,
-    depositedAmount: data.amount, // DTO의 depositedAmount와 이름 맞춤
-    // payUuid, transactionId는 빈 값으로 보냄 (서버 Validation 통과용)
-    payUuid: "", 
-    transactionId: ""
-  }),
-
-  
+  issueAccount: (data) => api.post('/payments/issue', data),
+ // 입금 확인 요청
   confirmDeposit: (data) => api.post('/payments/deposit', data),
+  // 결제 내역 가져오기 추가
+  getHistory: () => api.get('/payments/history')
 };

@@ -21,7 +21,7 @@ const Home = () => {
         
         {/* 1. 주문하기 카드 */}
         <div 
-          onClick={() => navigate('/payment')}
+          onClick={() => navigate('/user/payment')}
           className="group cursor-pointer p-10 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-blue-500 hover:shadow-xl hover:shadow-blue-50 transition-all duration-300 text-center space-y-6"
         >
           <div className="text-6xl group-hover:scale-110 transition-transform duration-300">🛒</div>
@@ -36,7 +36,7 @@ const Home = () => {
 
         {/* 2. 결제 내역 보기 카드 */}
         <div 
-          onClick={() => navigate('/history')} // 이동할 경로는 프로젝트에 맞게 수정하세요
+          onClick={() => navigate('/user/history')} // 이동할 경로는 프로젝트에 맞게 수정하세요
           className="group cursor-pointer p-10 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-50 transition-all duration-300 text-center space-y-6"
         >
           <div className="text-6xl group-hover:scale-110 transition-transform duration-300">📋</div>

@@ -43,7 +43,7 @@ const Payment = () => {
 
             if (data) {
                 // 4. 성공 시 다음 페이지로 데이터 전달하며 이동
-                navigate('/virtual-account', {
+                navigate('/user/virtual-account', {
                     state: {
                         payUuid: data.payUuid,            // 백엔드가 생성한 진짜 UUID
                         maskedAccount: data.maskedAccount, // 백엔드가 생성한 진짜 계좌번호
@@ -59,6 +59,8 @@ const Payment = () => {
             alert(errorMessage);
         }
     };
+
+    
     return (
         <div className="max-w-6xl mx-auto p-8 flex flex-col md:flex-row gap-8">
             {/* 좌측: 상품 선택 및 정보 입력 */}
