@@ -10,7 +10,8 @@ const VirtualAccount = () => {
     payUuid = "발급 오류", 
     maskedAccount = "000-000-00000", 
     depositedAmount = 0, 
-    productName = "선택 상품 없음" 
+    productName = "선택 상품 없음" ,
+    bankName = "은행 정보 없음",
   } = location.state || {};
 
   // 입금 확인 처리 함수 (실제 백엔드 호출)
@@ -65,7 +66,7 @@ const VirtualAccount = () => {
             </div>
             <hr className="border-slate-200" />
             <div>
-              <p className="text-sm text-slate-500 mb-1">입금 계좌 (신한은행)</p>
+              <p className="text-sm text-slate-500 mb-1">입금 계좌 ({bankName})</p>
               <div className="flex items-center justify-center gap-2">
                 <p className="text-xl font-bold text-slate-800 tracking-wider">
                   {maskedAccount}

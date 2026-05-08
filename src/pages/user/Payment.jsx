@@ -48,7 +48,8 @@ const Payment = () => {
                         payUuid: data.payUuid,            // 백엔드가 생성한 진짜 UUID
                         maskedAccount: data.maskedAccount, // 백엔드가 생성한 진짜 계좌번호
                         depositedAmount: data.depositedAmount,
-                        productName: selectedProduct.name
+                        productName: selectedProduct.name,
+                        bankName: data.bankName
                     }
                 });
             }
