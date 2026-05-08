@@ -1,5 +1,5 @@
 function SellerProductRankTable({ topProducts }) {
-  const products = topProducts || []
+  const products = topProducts || [];
 
   return (
     <section className="seller-panel">
@@ -47,7 +47,7 @@ function SellerProductRankTable({ topProducts }) {
         </div>
       )}
     </section>
-  )
+  );
 }
 
-export default SellerProductRankTable
+export default SellerProductRankTable;

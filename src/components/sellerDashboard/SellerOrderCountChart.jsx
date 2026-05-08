@@ -1,6 +1,6 @@
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -8,44 +8,45 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-function SellerDailySalesChart({ dailySales }) {
+function SellerOrderCountChart({ dailySales }) {
   const chartData = (dailySales || []).map((item) => ({
     date: item.statDate,
-    amount: item.dailyAmount,
+    count: item.dailyCount,
   }));
 
   return (
     <section className="seller-panel">
       <div className="seller-panel-header">
-        <h2>날짜별 매출</h2>
-        <p>선택한 기간의 일자별 매출 흐름입니다.</p>
+        <h2>날짜별 주문 건수</h2>
+        <p>선택한 기간의 일자별 결제 완료 건수입니다.</p>
       </div>
 
       {chartData.length === 0 ? (
         <div className="seller-empty-box">
-          조회된 매출 데이터가 없습니다.
+          조회된 주문 데이터가 없습니다.
         </div>
       ) : (
         <div className="seller-chart-box">
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData}>
+            <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis tickFormatter={(value) => `${value / 10000}만`} />
+              <YAxis allowDecimals={false} />
               <Tooltip
                 formatter={(value) => [
-                  `${Number(value).toLocaleString()}원`,
-                  '매출액',
+                  `${Number(value).toLocaleString()}건`,
+                  '주문 건수',
                 ]}
                 labelFormatter={(label) => `날짜: ${label}`}
               />
-              <Bar
-                dataKey="amount"
-                name="amount"
-                fill="#7c3aed"
-                radius={[8, 8, 0, 0]}
+              <Line
+                type="monotone"
+                dataKey="count"
+                stroke="#2563eb"
+                strokeWidth={3}
+                dot={{ r: 4 }}
               />
-            </BarChart>
+            </LineChart>
           </ResponsiveContainer>
         </div>
       )}
@@ -53,4 +54,4 @@ function SellerDailySalesChart({ dailySales }) {
   );
 }
 
-export default SellerDailySalesChart;
+export default SellerOrderCountChart;

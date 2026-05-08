@@ -3,7 +3,7 @@ function SellerPeriodTabs({ selectedPeriod, onChange }) {
     { label: '일간', value: 'DAILY' },
     { label: '주간', value: 'WEEKLY' },
     { label: '월간', value: 'MONTHLY' },
-  ]
+  ];
 
   return (
     <div className="seller-period-tabs">
@@ -22,7 +22,7 @@ function SellerPeriodTabs({ selectedPeriod, onChange }) {
         </button>
       ))}
     </div>
-  )
+  );
 }
 
-export default SellerPeriodTabs
+export default SellerPeriodTabs;
