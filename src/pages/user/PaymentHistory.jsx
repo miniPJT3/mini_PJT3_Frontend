@@ -51,7 +51,7 @@ const PaymentHistory = () => {
       default: return { label: status, color: 'bg-gray-100 text-gray-600', icon: <FiAlertCircle className="w-4 h-4" /> };
     }
   };
-  
+
 
   const totalPaidAmount = historyList
     .filter(item => item.status === 'PAID')
@@ -64,10 +64,10 @@ const PaymentHistory = () => {
   const filteredList = historyList.filter((item) => {
     // 검색어 체크 (상품명에 검색어가 포함되어 있는지)
     const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // 상태 체크 (전체 상태가 아니면 선택된 상태와 일치하는지)
-    const matchesStatus = 
-      filterStatus === "전체 상태" || 
+    const matchesStatus =
+      filterStatus === "전체 상태" ||
       (filterStatus === "결제 완료" && item.status === "PAID") ||
       (filterStatus === "입금 대기중" && item.status === "PENDING") ||
       (filterStatus === "만료됨" && item.status === "EXPIRED") ||
@@ -122,17 +122,17 @@ const PaymentHistory = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="relative">
           <FiSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input 
-            type="text" 
-            placeholder="상품명 검색..." 
+          <input
+            type="text"
+            placeholder="상품명 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white rounded-2xl py-5 pl-16 pr-6 border border-slate-100 shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
+            className="w-full bg-white rounded-2xl py-5 pl-16 pr-6 border border-slate-100 shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
           />
         </div>
         <div className="relative">
           <FiFilter className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <select 
+          <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="w-full bg-white rounded-2xl py-5 pl-16 pr-10 border border-slate-100 shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-medium cursor-pointer"
@@ -157,6 +157,19 @@ const PaymentHistory = () => {
         <div className="space-y-6">
           {filteredList.map((item, index) => {
             const statusInfo = getStatusInfo(item.status);
+
+            // 1. 거래일시 예쁘게 포맷팅 (T와 나노초 제거)
+            const formattedDate = item.message
+              ? new Date(item.message).toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+              })
+              : '시간 정보 없음';
+
             return (
               <div key={index} className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-slate-200/50 border border-slate-100 transition-all hover:border-blue-200">
                 <div className="flex justify-between items-center">
@@ -168,7 +181,7 @@ const PaymentHistory = () => {
                         {statusInfo.label}
                       </span>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <p className="text-sm text-slate-500 font-bold">
                         입금은행: <span className="text-slate-700 font-bold">{item.bankName || "정보 없음"}</span>
@@ -177,7 +190,8 @@ const PaymentHistory = () => {
                         계좌번호: <span className="text-slate-700 font-bold">{item.maskedAccount || "정보 없음"}</span>
                       </p>
                       <p className="text-sm text-slate-500 font-bold">
-                        거래일시: <span className="text-slate-400 font-medium">{item.message || '시간 정보 없음'}</span>
+                        {/* 2. 가공된 formattedDate 적용 */}
+                        거래일시: <span className="text-slate-400 font-medium">{formattedDate}</span>
                       </p>
                     </div>
                   </div>
@@ -186,7 +200,7 @@ const PaymentHistory = () => {
                     <p className="text-4xl font-black text-blue-600 tracking-tighter">
                       {item.depositedAmount?.toLocaleString()}원
                     </p>
-                    
+
                     <div>
                       {item.status === 'PAID' && (
                         <button
