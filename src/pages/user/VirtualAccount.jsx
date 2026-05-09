@@ -17,24 +17,21 @@ const VirtualAccount = () => {
   // 입금 확인 처리 함수 (실제 백엔드 호출)
   const handleDepositConfirm = async () => {
     try {
-      // 1. 서버에 입금 확인 요청
-      const depositData = {
-        payUuid: payUuid,
-        depositedAmount: depositedAmount,
-        productName: productName,
-        transactionId: `TX_CONFIRM_${Date.now()}` // 가상의 트랜잭션 ID 생성
-      };
+      // 1. 서버에 입금 확인(보고) 요청
+      // 백엔드 컨트롤러가 @PostMapping("/report-deposit/{payUuid}") 이므로 UUID만 있으면 됩니다.
+      const response = await paymentApi.reportDeposit(payUuid);
 
-      const response = await paymentApi.confirmDeposit(depositData);
-
+      // response.status가 200(성공)이면 처리
       if (response.status === 200) {
-        alert(`${productName} 입금이 완료되었습니다! 결제 내역으로 이동합니다.`);
+        alert(`${productName} 입금 보고가 완료되었습니다! 판매자 승인 후 최종 완료됩니다.`);
         // 2. 성공 시 결제 내역 페이지로 이동
         navigate('/user/history');
       }
     } catch (error) {
-      console.error("입금 처리 중 오류 발생:", error);
-      alert(error.response?.data?.message || "입금 처리에 실패했습니다. 금액을 확인해주세요.");
+      console.error("입금 보고 중 오류 발생:", error);
+      // 에러 메시지를 사용자에게 더 친절하게 보여줌
+      const errorMsg = error.response?.data?.message || "입금 보고에 실패했습니다. 다시 시도해주세요.";
+      alert(errorMsg);
     }
   };
 
