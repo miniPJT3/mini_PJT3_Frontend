@@ -56,7 +56,7 @@ const PaymentHistory = () => {
 
   // 🥊 수정 포인트 2: 필터링 조건에 '입금 완료' 추가
   const totalPaidAmount = historyList
-    .filter(item => item.status === 'PAID' || item.status === 'DEPOSITED') // 입금 완료도 합계에 포함 (지호님 선택)
+    .filter(item => item.status === 'PAID')// 입금 완료도 합계에 포함 (지호님 선택)
     .reduce((sum, item) => sum + (item.depositedAmount || 0), 0);
 
   const completedCount = historyList.filter(item => item.status === 'PAID').length;
