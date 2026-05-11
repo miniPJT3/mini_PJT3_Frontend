@@ -14,6 +14,7 @@ const Register = () => {
     role: 'USER'
   });
 
+  // 일반 회원가입 처리
   const handleJoin = async () => {
     // 필수 값 입력 여부 확인
     if (!formData.loginId || !formData.password || !formData.name || !formData.email) {
@@ -33,9 +34,14 @@ const Register = () => {
     }
   };
 
+  // 구글 회원가입 처리
+  const handleGoogleSignUp = () => {
+    // 현재 선택된 role(USER 또는 SELLER)을 파라미터로 담아 백엔드로 보냄
+    window.location.href = `http://localhost:8080/oauth2/authorization/google?role=${formData.role}`;
+  };
+
   return (
     <div className="flex flex-col items-center justify-center py-12 min-h-[90vh]">
-      {/* 영상의 로그인 카드와 통일감을 주는 3xl 라운드 카드 디자인 */}
       <div className="w-full max-w-lg bg-white p-10 rounded-3xl shadow-xl border border-gray-100">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-gray-800">새 계정 만들기</h2>
@@ -60,7 +66,7 @@ const Register = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-5">
-          {/* 입력 필드 레이아웃: 라벨과 인풋 조합 */}
+          {/* 입력 필드들 */}
           <div className="space-y-1">
             <label className="text-xs font-semibold text-gray-500 ml-1">이메일 주소</label>
             <input 
@@ -118,6 +124,21 @@ const Register = () => {
             가입하기
           </button>
         </div>
+
+        {/* 구분선 추가 */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="px-2 bg-white text-gray-400">또는 소셜 계정으로 가입</span></div>
+        </div>
+
+        {/* 구글 회원가입 버튼*/}
+        <button 
+          onClick={handleGoogleSignUp}
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 py-4 rounded-2xl font-semibold text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.98]"
+        >
+          <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-5 h-5" />
+          구글로 {formData.role === 'USER' ? '사용자' : '판매자'} 가입하기
+        </button>
 
         <p className="text-center text-sm text-gray-400 mt-8">
           이미 계정이 있으신가요? <Link to="/login" className="text-indigo-600 font-semibold hover:underline">로그인 페이지로</Link>
