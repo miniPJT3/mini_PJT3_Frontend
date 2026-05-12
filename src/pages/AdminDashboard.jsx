@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 
 // ======================================
-// Mock Data & Helper Functions
+// Helper Functions
 // ======================================
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -33,44 +33,31 @@ const barData = [
   { name: '전화번호', val: 90 },
 ];
 
-const systemStatus = {
-  activeVirtualAccountCount: 18,
-  todayTotalOrderCount: 64,
-  todayPaidOrderCount: 47,
-  todayFailedPaymentCount: 6,
-  todayPaymentSuccessRate: 73.4,
-};
-
-const systemDetailRows = [
-  { id: 1, label: '현재 활성화된 가상계좌 수', value: '18개', description: '상태가 ACTIVE이고 삭제되지 않은 가상계좌', apiField: 'activeVirtualAccountCount' },
-  { id: 2, label: '오늘 총 주문/결제 건수', value: '64건', description: '오늘 생성된 전체 Payment 기준', apiField: 'todayTotalOrderCount' },
-  { id: 3, label: '오늘 결제 성공 건수', value: '47건', description: 'TransactionStatus = PAID', apiField: 'todayPaidOrderCount' },
-  { id: 4, label: '오늘 결제 실패 건수', value: '6건', description: 'TransactionStatus = FAILED', apiField: 'todayFailedPaymentCount' },
-  { id: 5, label: '오늘 결제 성공률', value: '73.4%', description: '오늘 결제 성공 건수 / 오늘 전체 결제 건수', apiField: 'todayPaymentSuccessRate' },
-];
-
-const recentPaymentRows = [
-  { id: 1001, payUuid: 'PAY-20260511-001', member: '홍길동', amount: 42000, status: 'PAID', virtualAccountStatus: 'ACTIVE', createdAt: '2026-05-11T14:20:00' },
-  { id: 1002, payUuid: 'PAY-20260511-002', member: '김민수', amount: 18000, status: 'FAILED', virtualAccountStatus: 'EXPIRED', createdAt: '2026-05-11T14:15:00' },
-];
-
-const accountRoleCounts = { totalCount: 12, userCount: 8, sellerCount: 3, adminCount: 1 };
-
-const mockAccounts = [
-  { id: 1, email: 'user1@test.com', username: 'user1', name: '홍길동', provider: 'LOCAL', role: 'USER', roleName: '사용자', createdAt: '2026-05-11T12:30:00' },
-  { id: 2, email: 'seller1@test.com', username: 'seller1', name: '판매자1', provider: 'LOCAL', role: 'SELLER', roleName: '판매자', createdAt: '2026-05-11T12:35:00' },
-  { id: 3, email: 'admin@test.com', username: 'admin', name: '관리자', provider: 'LOCAL', role: 'ADMIN', roleName: '관리자', createdAt: '2026-05-11T12:40:00' },
-];
-
 // ======================================
 // Main Dashboard Component
 // ======================================
 const AdminDashboard = () => {
+  // 🥊 1. Hook(상태 선언)은 반드시 여기 최상단에 있어야 합니다!
   const [activeTab, setActiveTab] = useState('MONITORING');
   const [showAlert, setShowAlert] = useState(false);
   const [alertCount, setAlertCount] = useState(0);
   const [securityLogs, setSecurityLogs] = useState([]);
   const [selectedRole, setSelectedRole] = useState('ALL');
+
+  // 시스템 현황 상태
+  const [systemStatus, setSystemStatus] = useState({
+    activeVirtualAccountCount: 0,
+    todayTotalOrderCount: 0,
+    todayPaidOrderCount: 0,
+    todayFailedPaymentCount: 0,
+    todayPaymentSuccessRate: 0,
+  });
+
+  // 계정 현황 상태 (에러 해결: useEffect 밖으로 이동)
+  const [accountCounts, setAccountCounts] = useState({ 
+    totalCount: 0, userCount: 0, sellerCount: 0, adminCount: 0 
+  });
+  const [accounts, setAccounts] = useState([]);
 
   const formatLogData = (data) => ({
     id: data.id || Date.now(),
@@ -82,6 +69,7 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
+    // 1. 기존 보안 로그 로드
     const fetchExistingLogs = async () => {
       try {
         const response = await axios.get('http://localhost:8080/api/sse/logs', { withCredentials: true });
@@ -90,8 +78,37 @@ const AdminDashboard = () => {
         console.error("기존 로그 로드 실패:", error);
       }
     };
-    fetchExistingLogs();
 
+    // 2. 시스템 현황 로드
+    const fetchSystemStatus = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/admin/system-status', { withCredentials: true });
+        setSystemStatus(response.data);
+      } catch (error) {
+        console.error("시스템 현황 로드 실패:", error);
+      }
+    };
+
+    // 3. 계정 정보 로드
+    const fetchAccountsData = async () => {
+      try {
+        const [countsRes, listRes] = await Promise.all([
+          axios.get('http://localhost:8080/api/admin/accounts/role-counts', { withCredentials: true }),
+          axios.get('http://localhost:8080/api/admin/accounts', { withCredentials: true })
+        ]);
+        setAccountCounts(countsRes.data);
+        setAccounts(listRes.data);
+      } catch (error) {
+        console.error("계정 데이터 로드 실패:", error);
+      }
+    };
+
+    // 데이터 호출 실행
+    fetchExistingLogs();
+    fetchSystemStatus();
+    fetchAccountsData();
+
+    // SSE 연결 (보존)
     const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
     eventSource.addEventListener('security-alert', (event) => {
       const data = JSON.parse(event.data);
@@ -104,8 +121,9 @@ const AdminDashboard = () => {
   }, []);
 
   const filteredAccounts = useMemo(() => {
-    return selectedRole === 'ALL' ? mockAccounts : mockAccounts.filter(a => a.role === selectedRole);
-  }, [selectedRole]);
+    // 🥊 실제 데이터(accounts)를 사용합니다.
+    return selectedRole === 'ALL' ? accounts : accounts.filter(a => a.role === selectedRole);
+  }, [selectedRole, accounts]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -144,17 +162,18 @@ const AdminDashboard = () => {
 
       {/* Tab Content */}
       {activeTab === 'MONITORING' && (
-        <MonitoringTab 
-          showAlert={showAlert} setShowAlert={setShowAlert} 
+        <MonitoringTab
+          showAlert={showAlert} setShowAlert={setShowAlert}
           alertCount={alertCount} setAlertCount={setAlertCount}
-          securityLogs={securityLogs} 
+          securityLogs={securityLogs}
         />
       )}
-      {activeTab === 'SYSTEM' && <SystemStatusTab />}
+      {activeTab === 'SYSTEM' && <SystemStatusTab systemStatus={systemStatus} />}
       {activeTab === 'ACCOUNTS' && (
-        <AccountsTab 
-          selectedRole={selectedRole} setSelectedRole={setSelectedRole} 
-          filteredAccounts={filteredAccounts} 
+        <AccountsTab
+          selectedRole={selectedRole} setSelectedRole={setSelectedRole}
+          filteredAccounts={filteredAccounts}
+          accountCounts={accountCounts}
         />
       )}
     </div>
@@ -177,10 +196,10 @@ const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, sec
       </div>
     )}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      <StatCard title="차단된 접근" value={`${securityLogs.length}건`} sub="전체 누적(DB 포함)" color="bg-red-500" icon={<ShieldAlert size={20}/>} />
-      <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20}/>} />
-      <StatCard title="마스킹 성공률" value="97.3%" sub="개인정보 보호" color="bg-green-500" icon={<ShieldCheck size={20}/>} />
-      <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20}/>} />
+      <StatCard title="차단된 접근" value={`${securityLogs.length}건`} sub="전체 누적(DB 포함)" color="bg-red-500" icon={<ShieldAlert size={20} />} />
+      <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20} />} />
+      <StatCard title="마스킹 성공률" value="97.3%" sub="개인정보 보호" color="bg-green-500" icon={<ShieldCheck size={20} />} />
+      <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20} />} />
     </div>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <ChartCard title="실시간 위험 추이" data={initialLineData} type="line" />
@@ -211,65 +230,53 @@ const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, sec
   </>
 );
 
-const SystemStatusTab = () => (
-  <div className="space-y-8">
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h3 className="font-bold text-gray-800 mb-5">전체 시스템 현황 요약</h3>
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <MiniMetricCard title="활성 가상계좌" value={`${systemStatus.activeVirtualAccountCount}개`} icon={<Wallet size={18} />} tone="blue" />
-        <MiniMetricCard title="오늘 총 주문" value={`${systemStatus.todayTotalOrderCount}건`} icon={<ShoppingCart size={18} />} tone="slate" />
-        <MiniMetricCard title="오늘 성공" value={`${systemStatus.todayPaidOrderCount}건`} icon={<CheckCircle2 size={18} />} tone="green" />
-        <MiniMetricCard title="오늘 실패" value={`${systemStatus.todayFailedPaymentCount}건`} icon={<XCircle size={18} />} tone="red" />
-        <MiniMetricCard title="성공률" value={`${systemStatus.todayPaymentSuccessRate}%`} icon={<Percent size={18} />} tone="orange" />
-      </div>
-    </section>
+const SystemStatusTab = ({ systemStatus }) => {
+  const dynamicDetailRows = [
+    { id: 1, label: '현재 활성화된 가상계좌 수', value: `${systemStatus.activeVirtualAccountCount}개`, description: '상태가 ACTIVE이고 삭제되지 않은 가상계좌', apiField: 'activeVirtualAccountCount' },
+    { id: 2, label: '오늘 총 주문/결제 건수', value: `${systemStatus.todayTotalOrderCount}건`, description: '오늘 생성된 전체 Payment 기준', apiField: 'todayTotalOrderCount' },
+    { id: 3, label: '오늘 결제 성공 건수', value: `${systemStatus.todayPaidOrderCount}건`, description: 'TransactionStatus = PAID', apiField: 'todayPaidOrderCount' },
+    { id: 4, label: '오늘 결제 실패 건수', value: `${systemStatus.todayFailedPaymentCount}건`, description: 'TransactionStatus = FAILED', apiField: 'todayFailedPaymentCount' },
+    { id: 5, label: '오늘 결제 성공률', value: `${systemStatus.todayPaymentSuccessRate}%`, description: '오늘 결제 성공 건수 / 오늘 전체 결제 건수', apiField: 'todayPaymentSuccessRate' },
+  ];
 
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-5 border-b border-gray-100 flex items-center gap-2"><ListChecks size={18} className="text-blue-600" /><h3 className="font-bold text-gray-700">시스템 집계 상세</h3></div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr><th className="p-4">항목</th><th className="p-4">값</th><th className="p-4">설명</th><th className="p-4">백엔드 필드</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50 text-sm">
-            {systemDetailRows.map(row => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 font-semibold text-gray-700">{row.label}</td>
-                <td className="p-4 text-blue-600 font-extrabold">{row.value}</td>
-                <td className="p-4 text-gray-500">{row.description}</td>
-                <td className="p-4 font-mono text-xs text-gray-400">{row.apiField}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+  return (
+    <div className="space-y-8">
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <h3 className="font-bold text-gray-800 mb-5">전체 시스템 현황 요약</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <MiniMetricCard title="활성 가상계좌" value={`${systemStatus.activeVirtualAccountCount}개`} icon={<Wallet size={18} />} tone="blue" />
+          <MiniMetricCard title="오늘 총 주문" value={`${systemStatus.todayTotalOrderCount}건`} icon={<ShoppingCart size={18} />} tone="slate" />
+          <MiniMetricCard title="오늘 성공" value={`${systemStatus.todayPaidOrderCount}건`} icon={<CheckCircle2 size={18} />} tone="green" />
+          <MiniMetricCard title="오늘 실패" value={`${systemStatus.todayFailedPaymentCount}건`} icon={<XCircle size={18} />} tone="red" />
+          <MiniMetricCard title="성공률" value={`${systemStatus.todayPaymentSuccessRate}%`} icon={<Percent size={18} />} tone="orange" />
+        </div>
+      </section>
 
-    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-5 border-b border-gray-100 font-bold text-gray-700">최근 결제 요청 리스트</div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr><th className="p-4">결제 UUID</th><th className="p-4">사용자</th><th className="p-4">금액</th><th className="p-4">상태</th><th className="p-4">시각</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50 text-sm">
-            {recentPaymentRows.map(row => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 font-mono text-blue-600">{row.payUuid}</td>
-                <td className="p-4 font-semibold text-gray-700">{row.member}</td>
-                <td className="p-4">{formatMoney(row.amount)}</td>
-                <td className="p-4"><span className="bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs font-bold">{row.status}</span></td>
-                <td className="p-4 text-gray-400">{formatDateTime(row.createdAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-);
+      <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 flex items-center gap-2"><ListChecks size={18} className="text-blue-600" /><h3 className="font-bold text-gray-700">시스템 집계 상세</h3></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr><th className="p-4">항목</th><th className="p-4">값</th><th className="p-4">설명</th><th className="p-4">백엔드 필드</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 text-sm">
+              {dynamicDetailRows.map(row => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="p-4 font-semibold text-gray-700">{row.label}</td>
+                  <td className="p-4 text-blue-600 font-extrabold">{row.value}</td>
+                  <td className="p-4 text-gray-500">{row.description}</td>
+                  <td className="p-4 font-mono text-xs text-gray-400">{row.apiField}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+};
 
-const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts }) => (
+const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts, accountCounts }) => (
   <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div className="p-5 border-b border-gray-100 flex justify-between items-center">
       <h3 className="font-bold text-gray-700">계좌 및 역할 조회</h3>
@@ -280,10 +287,10 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts }) => (
       </div>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-gray-50/60 border-b">
-      <AccountCountCard title="전체" value={accountRoleCounts.totalCount} icon={<Users size={18} />} />
-      <AccountCountCard title="사용자" value={accountRoleCounts.userCount} icon={<UserRound size={18} />} />
-      <AccountCountCard title="판매자" value={accountRoleCounts.sellerCount} icon={<Store size={18} />} />
-      <AccountCountCard title="관리자" value={accountRoleCounts.adminCount} icon={<UserCog size={18} />} />
+      <AccountCountCard title="전체" value={accountCounts.totalCount} icon={<Users size={18} />} />
+      <AccountCountCard title="사용자" value={accountCounts.userCount} icon={<UserRound size={18} />} />
+      <AccountCountCard title="판매자" value={accountCounts.sellerCount} icon={<Store size={18} />} />
+      <AccountCountCard title="관리자" value={accountCounts.adminCount} icon={<UserCog size={18} />} />
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-left">
@@ -296,7 +303,11 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts }) => (
               <td className="p-4 font-semibold text-gray-700">{account.name}</td>
               <td className="p-4 text-gray-600">{account.email}</td>
               <td className="p-4 font-mono text-blue-600">{account.username}</td>
-              <td className="p-4"><span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">{account.role}</span></td>
+              <td className="p-4">
+                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {account.roleName || account.role}
+                </span>
+              </td>
               <td className="p-4 text-gray-400">{formatDateTime(account.createdAt)}</td>
             </tr>
           ))}
@@ -306,7 +317,6 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts }) => (
   </section>
 );
 
-// UI Components
 const StatCard = ({ title, value, sub, color, icon }) => (
   <div className={`${color} text-white p-5 rounded-2xl shadow-lg relative overflow-hidden`}>
     <div className="relative z-10">
