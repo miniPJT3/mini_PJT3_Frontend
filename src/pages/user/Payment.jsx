@@ -2,25 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { paymentApi } from '../../api/paymentApi';
+import { useAuthStore } from '../../store/useAuthStore'; // 1. 스토어 임포트
 
 const Payment = () => {
     const navigate = useNavigate();
+    const { userInfo } = useAuthStore(); // 2. 로그인된 사용자 정보 가져오기
     
-    // 🥊 상태 관리: DB에서 가져온 상품들을 저장
     const [products, setProducts] = useState([]); 
     const [loading, setLoading] = useState(true);
 
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [quantity, setQuantity] = useState(1);
-    const [orderer, setOrderer] = useState({ name: '', email: '' });
+    
+    // 3. 초기 상태를 빈 값이 아닌 userInfo의 값으로 설정 (방어 코드 포함)
+    const [orderer, setOrderer] = useState({ 
+        name: userInfo?.name || '', 
+        email: userInfo?.email || '' 
+    });
+    
     const [isFormValid, setIsFormValid] = useState(false);
 
-    // 🥊 1. 컴포넌트 마운트 시 백엔드에서 상품 6개 로드
+    // 4. 만약 스토어 정보가 늦게 로드될 경우를 대비해 감시 로직 추가
+    useEffect(() => {
+        if (userInfo) {
+            setOrderer({
+                name: userInfo.name || '',
+                email: userInfo.email || ''
+            });
+        }
+    }, [userInfo]);
+
     useEffect(() => {
         const fetchProducts = async () => {
             try {
                 setLoading(true);
-                // 백엔드 상품 조회 API 호출
                 const response = await axios.get('/api/products'); 
                 setProducts(response.data);
             } catch (error) {
@@ -33,15 +48,12 @@ const Payment = () => {
         fetchProducts();
     }, []);
 
-    // 🥊 2. 입력값 검증 로직
     useEffect(() => {
         const isValid = selectedProduct && orderer.name && orderer.email;
         setIsFormValid(isValid);
     }, [selectedProduct, orderer]);
 
-    // 🥊 3. 가상계좌 발급 핸들러
     const handleIssueAccount = async () => {
-        // 안전성을 위해 productId와 계산된 금액을 함께 전송
         const requestData = {
             productId: selectedProduct.id, 
             productName: selectedProduct.name,
@@ -55,7 +67,6 @@ const Payment = () => {
             const data = response.data;
 
             if (data) {
-                // 발급 성공 시 가상계좌 확인 페이지로 이동
                 navigate('/user/virtual-account', {
                     state: {
                         payUuid: data.payUuid,
@@ -85,14 +96,12 @@ const Payment = () => {
 
     return (
         <div className="max-w-6xl mx-auto p-8 flex flex-col md:flex-row gap-8">
-            {/* 좌측: 상품 선택 및 정보 입력 */}
             <div className="flex-1">
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold mb-2">주문하기</h1>
                     <p className="text-gray-500">원하는 상품을 선택하고 가상계좌를 발급받으세요.</p>
                 </header>
 
-                {/* 상품 그리드 (DB 데이터 연동) */}
                 <section className="mb-10">
                     <div className="flex items-center gap-2 mb-4">
                         <span className="text-blue-600 font-bold">🛒</span>
@@ -116,7 +125,6 @@ const Payment = () => {
                         ))}
                     </div>
 
-                    {/* 수량 조절 */}
                     <div className="mt-6 p-4 bg-gray-50 rounded-xl flex items-center justify-between">
                         <span className="font-medium">수량</span>
                         <div className="flex items-center border bg-white rounded-lg">
@@ -134,7 +142,6 @@ const Payment = () => {
                     </div>
                 </section>
 
-                {/* 주문자 정보 */}
                 <section className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
                     <h2 className="text-xl font-semibold mb-4">주문자 정보</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,6 +150,7 @@ const Payment = () => {
                             <input
                                 type="text"
                                 placeholder="홍길동"
+                                value={orderer.name} // 5. 상태값 바인딩
                                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                 onChange={(e) => setOrderer({ ...orderer, name: e.target.value })}
                             />
@@ -152,6 +160,7 @@ const Payment = () => {
                             <input
                                 type="email"
                                 placeholder="example@email.com"
+                                value={orderer.email} // 5. 상태값 바인딩
                                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                                 onChange={(e) => setOrderer({ ...orderer, email: e.target.value })}
                             />
@@ -160,7 +169,6 @@ const Payment = () => {
                 </section>
             </div>
 
-            {/* 우측: 주문 요약 사이드바 */}
             <aside className="w-full md:w-80">
                 <div className="sticky top-8 bg-white border border-gray-100 p-6 rounded-2xl shadow-lg">
                     <h3 className="text-lg font-bold mb-6 border-b pb-2">주문 요약</h3>
