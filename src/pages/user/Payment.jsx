@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios'; // axios는 이제 paymentApi 및 productApi 내부에서 관리됨
 import { paymentApi } from '../../api/paymentApi';
+import { productApi } from '../../api/productApi'; // productApi import
 
 const Payment = () => {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Payment = () => {
             try {
                 setLoading(true);
                 // 백엔드 상품 조회 API 호출
-                const response = await axios.get('/api/products'); 
+                const response = await productApi.getProducts(); 
                 setProducts(response.data);
             } catch (error) {
                 console.error("상품 목록 로드 실패:", error);

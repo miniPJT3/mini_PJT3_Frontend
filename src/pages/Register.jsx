@@ -1,35 +1,35 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { authApi } from '../api/authApi'; // authApi import
 
 const Register = () => {
   const navigate = useNavigate();
-  // 회원가입에 필요한 6가지 필수 항목 상태 관리
+  // 회원가입에 필요한 필수 항목 상태 관리
   const [formData, setFormData] = useState({
-    loginId: '', 
-    password: '', 
-    name: '', 
-    email: '', 
-    phone: '', 
+    email: '',
+    username: '',
+    password: '',
+    nickname: '',
     role: 'USER'
   });
 
   // 일반 회원가입 처리
   const handleJoin = async () => {
     // 필수 값 입력 여부 확인
-    if (!formData.loginId || !formData.password || !formData.name || !formData.email) {
+    if (!formData.email || !formData.username || !formData.password || !formData.nickname) {
       alert('모든 필수 정보를 입력해주세요.');
       return;
     }
 
     try {
-      // 백엔드 AuthController의 /api/auth/join으로 데이터 전송
-      await axios.post('/api/auth/join', formData);
+      // 백엔드 AuthController의 /api/v1/auth/signup으로 데이터 전송
+      await authApi.signup(formData);
       alert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.');
       navigate('/login'); // 회원가입 성공 시 로그인 페이지로 리다이렉트
     } catch (error) {
       // 백엔드에서 던지는 에러 메시지 처리
-      const errorMsg = error.response?.data || '회원가입 중 에러가 발생했습니다.';
+      const errorMsg = error.response?.data?.message || '회원가입 중 에러가 발생했습니다.';
       alert(errorMsg);
     }
   };
@@ -74,16 +74,20 @@ const Register = () => {
               placeholder="example@email.com" 
               onChange={(e)=>setFormData({...formData, email: e.target.value})} 
               className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
+              value={formData.email}
+              required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 ml-1">아이디</label>
+            <label className="text-xs font-semibold text-gray-500 ml-1">사용자 이름</label>
             <input 
               type="text" 
-              placeholder="사용할 아이디 입력" 
-              onChange={(e)=>setFormData({...formData, loginId: e.target.value})} 
+              placeholder="사용자 이름을 입력하세요" 
+              onChange={(e)=>setFormData({...formData, username: e.target.value})} 
               className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
+              value={formData.username}
+              required
             />
           </div>
 
@@ -94,26 +98,20 @@ const Register = () => {
               placeholder="8자 이상 입력" 
               onChange={(e)=>setFormData({...formData, password: e.target.value})} 
               className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
+              value={formData.password}
+              required
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 ml-1">이름(닉네임)</label>
+            <label className="text-xs font-semibold text-gray-500 ml-1">닉네임</label>
             <input 
               type="text" 
-              placeholder="실명 또는 활동명" 
-              onChange={(e)=>setFormData({...formData, name: e.target.value})} 
+              placeholder="활동 닉네임을 입력" 
+              onChange={(e)=>setFormData({...formData, nickname: e.target.value})} 
               className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-gray-500 ml-1">전화번호</label>
-            <input 
-              type="tel" 
-              placeholder="010-1234-5678" 
-              onChange={(e)=>setFormData({...formData, phone: e.target.value})} 
-              className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
+              value={formData.nickname}
+              required
             />
           </div>
 

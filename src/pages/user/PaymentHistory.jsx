@@ -7,6 +7,7 @@ const PaymentHistory = () => {
   const navigate = useNavigate();
   const [historyList, setHistoryList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [, setTick] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("전체 상태");
@@ -14,9 +15,19 @@ const PaymentHistory = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true);
-      // 지호님 컨트롤러의 @GetMapping("/history")와 매핑된 함수 호출
-      const response = await paymentApi.getMyHistory(); 
-      setHistoryList(response.data);
+      // 새로운 v1 결제 이력 조회 API 호출
+      const response = await paymentApi.getPaymentHistoryV1();
+      
+      console.log(response);
+      console.log(response.data);
+      console.log(typeof response.data);
+      console.log(Array.isArray(response.data));
+
+      setHistoryList(
+      Array.isArray(response.data.data)
+        ? response.data.data
+        : []
+    );
     } catch (error) {
       console.error("내역 로드 실패:", error);
     } finally {
@@ -26,6 +37,14 @@ const PaymentHistory = () => {
 
   useEffect(() => {
     fetchHistory();
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(prev => prev + 1);
+    }, 60000);
+
+    return () => clearInterval(timer);
   }, []);
 
   const handleDirectDeposit = (item) => {
@@ -53,6 +72,24 @@ const PaymentHistory = () => {
       default: return { label: status, color: 'bg-gray-100 text-gray-600', icon: <FiAlertCircle className="w-4 h-4" /> };
     }
   };
+
+  const getRemainingTime = (expiredAt) => {
+  if (!expiredAt) return "만료 정보 없음";
+
+  const now = new Date();
+  const expired = new Date(expiredAt);
+
+  const diffMs = expired - now;
+
+  if (diffMs <= 0) {
+    return "만료됨";
+  }
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  return `${hours}시간 ${minutes}분 남음`;
+};
 
   // 🥊 수정 포인트 2: 필터링 조건에 '입금 완료' 추가
   const totalPaidAmount = historyList
@@ -157,7 +194,18 @@ const PaymentHistory = () => {
               ? new Date(item.message).toLocaleString('ko-KR', {
                 year: 'numeric', month: 'numeric', day: 'numeric',
                 hour: '2-digit', minute: '2-digit', hour12: true,
-              }) : '시간 정보 없음';
+              }) : '입금 미확인';
+              const formattedExpiredAt = item.expiredAt
+              ? new Date(item.expiredAt).toLocaleString('ko-KR', {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                })
+              : '만료 정보 없음';
+              const remainingTime = getRemainingTime(item.expiredAt);
 
             return (
               <div key={index} className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-slate-200/50 border border-slate-100 transition-all hover:border-blue-200">
@@ -180,6 +228,19 @@ const PaymentHistory = () => {
                       </p>
                       <p className="text-sm text-slate-500 font-bold">
                         거래일시: <span className="text-slate-400 font-medium">{formattedDate}</span>
+                      </p>
+                      <p className="text-sm text-slate-500 font-bold">
+                        계좌만료:
+                        <span className="text-blue-500 font-bold ml-1">
+                          {formattedExpiredAt}
+                        </span>
+                      </p>
+
+                      <p className="text-sm text-slate-500 font-bold">
+                        남은시간:
+                        <span className="text-red-500 font-bold ml-1">
+                          {remainingTime}
+                        </span>
                       </p>
                     </div>
                   </div>

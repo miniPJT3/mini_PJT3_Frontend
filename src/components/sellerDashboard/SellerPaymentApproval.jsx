@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios'; 
+import { paymentApi } from '../../api/paymentApi'; // paymentApi import
 
 const SellerPaymentApproval = ({ sellerId }) => {
   const [paymentList, setPaymentList] = useState([]); // 🥊 이름 변경: pendingList -> paymentList
@@ -9,7 +9,7 @@ const SellerPaymentApproval = ({ sellerId }) => {
     try {
       setLoading(true);
       // 🥊 백엔드 API가 sellerId의 전체(PENDING, DEPOSITED, PAID)를 주도록 되어있어야 기록이 남습니다.
-      const response = await axios.get(`/api/payments/seller/${sellerId}/history`); 
+      const response = await paymentApi.getSellerPaymentHistory(sellerId); 
       setPaymentList(response.data);
     } catch (error) {
       console.error("❌ 데이터 로드 실패:", error);
@@ -29,7 +29,7 @@ const SellerPaymentApproval = ({ sellerId }) => {
   const handleApprove = async (payUuid) => {
     if (!window.confirm("실제 계좌에 입금된 것을 확인하셨습니까? 승인 시 결제가 최종 완료됩니다.")) return;
     try {
-      await axios.post(`/api/payments/approve/${payUuid}`); 
+      await paymentApi.approvePayment(payUuid); 
       alert("성공적으로 승인되었습니다.");
       fetchPayments(); // 목록 새로고침 (상태가 PAID로 변하면서 아래 섹션으로 이동함)
     } catch (error) {

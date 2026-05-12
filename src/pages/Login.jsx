@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuthStore } from '../store/useAuthStore'; // useAuthStore import
 
 const Login = () => {
   const navigate = useNavigate();
+  const loginStore = useAuthStore(); // useAuthStore 인스턴스 가져오기
   
-  const [loginId, setLoginId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleGoogleLogin = () => {
@@ -17,16 +19,21 @@ const Login = () => {
 
     try {
       // 1. 로그인 요청
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
-        loginId: loginId,
+      const response = await axios.post('http://localhost:8080/api/v1/auth/login', {
+        email: email, // loginId 대신 email 사용
         password: password
       });
 
-      // 2. 응답 데이터 확인
-      const { role } = response.data;
-      console.log("로그인 성공! 역할(Role):", role);
+      // 2. 응답 데이터 확인 및 디버그 로깅 제거
+      const { data } = response.data; // 백엔드 응답의 'data' 필드 전체를 추출
+      const { accessToken, refreshToken, role, ...otherUserInfo } = data; // 'data' 필드에서 accessToken, refreshToken, role, 그리고 나머지 사용자 정보 추출
+      
+      console.log("로그인 성공! 역할(Role):", role); // 최종 role 확인
 
-      // 3. App.jsx에 정의된 경로에 맞춰 이동
+      // 3. useAuthStore에 로그인 정보 저장 (role과 함께 다른 사용자 정보를 userInfo로 전달)
+      loginStore.login({ role, ...otherUserInfo }, accessToken); // userInfoData와 accessToken 전달
+
+      // 4. App.jsx에 정의된 경로에 맞춰 이동
       if (role === 'ADMIN') {
         navigate('/admin/dashboard');
       } else if (role === 'SELLER') {
@@ -54,9 +61,9 @@ const Login = () => {
         <form className="space-y-4" onSubmit={handleLogin}>
           <input 
             type="text" 
-            placeholder="아이디" 
-            value={loginId}
-            onChange={(e) => setLoginId(e.target.value)}
+            placeholder="이메일" // 아이디 대신 이메일로 변경
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" 
             required
           />
