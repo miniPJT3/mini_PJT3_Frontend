@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   // Vite 프록시를 쓰지 않는다면 전체 주소를 적어줍니다.
-  baseURL: 'http://localhost:8080/api', 
+  baseURL: '/api', 
   withCredentials: true, // 백엔드 세션/쿠키 통신을 위해 필수!
 });
 

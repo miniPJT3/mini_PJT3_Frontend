@@ -37,7 +37,7 @@ const Register = () => {
   // 구글 회원가입 처리
   const handleGoogleSignUp = () => {
     // 현재 선택된 role(USER 또는 SELLER)을 파라미터로 담아 백엔드로 보냄
-    window.location.href = `http://localhost:8080/oauth2/authorization/google?role=${formData.role}`;
+    window.location.href = `/oauth2/authorization/google?role=${formData.role}`;
   };
 
   return (

@@ -9,7 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    window.location.href = "/oauth2/authorization/google";
   };
 
   const handleLogin = async (e) => {
@@ -17,7 +17,7 @@ const Login = () => {
 
     try {
       // 1. 로그인 요청
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         loginId: loginId,
         password: password
       });
