@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Activity } from 'lucide-react';
 
 const Simulator = () => {
   const [account, setAccount] = useState('');
@@ -72,6 +74,13 @@ const Simulator = () => {
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white min-h-screen">
+      <Link
+        to="/admin/dashboard"
+        className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-blue-600 transition-all mb-3"
+      >
+        <ArrowLeft size={18} />
+        보안 관제 센터로 돌아가기
+      </Link>
       <h1 className="text-2xl font-bold mb-6">⚡ 입금 시뮬레이터 (보안 검증 모드)</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
