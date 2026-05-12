@@ -2,7 +2,7 @@ const API_BASE_URL = '/api/dashboard';
 
 // 프론트 화면만 먼저 테스트하려면 true
 // 백엔드 연동 테스트할 때 false로 변경
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 function formatDate(date) {
   const year = date.getFullYear();
