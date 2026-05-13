@@ -23,8 +23,6 @@ const formatDateTime = (value) => {
   });
 };
 
-const formatMoney = (value) => `${value.toLocaleString('ko-KR')}원`;
-
 const initialLineData = [{ time: '현재', threat: 0 }];
 const barData = [
   { name: '계좌', val: 100 },
@@ -41,9 +39,8 @@ const AdminDashboard = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertCount, setAlertCount] = useState(0);
   const [securityLogs, setSecurityLogs] = useState([]);
-  const [totalViolationCount, setTotalViolationCount] = useState(0);
+  const [totalViolationCount, setTotalViolationCount] = useState(0); // ✅ 누적 차단 건수 상태 추가
   const [selectedRole, setSelectedRole] = useState('ALL');
-  
 
   // 시스템 현황 상태
   const [systemStatus, setSystemStatus] = useState({
@@ -61,7 +58,7 @@ const AdminDashboard = () => {
   const [accounts, setAccounts] = useState([]);
 
   const formatLogData = (data) => ({
-    id: data.id || Date.now() + Math.random(), // 중복 키 방지
+    id: data.id || Date.now() + Math.random(),
     time: new Date(data.createdAt).toLocaleString(),
     endpoint: data.requestPath,
     status: data.statusCode,
@@ -70,7 +67,7 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    // 1. 기존 보안 로그 로드 (최대 20건으로 제한)
+    // 1. 기존 보안 로그 및 전체 카운트 로드
     const fetchSecurityData = async () => {
       try {
         const [logsRes, countRes] = await Promise.all([
@@ -87,8 +84,8 @@ const AdminDashboard = () => {
     // 2. 시스템 현황 로드
     const fetchSystemStatus = async () => {
       try {
-        // API 엔드포인트가 비어있던 부분을 확인이 필요합니다. (예: /api/admin/system-status)
-        const response = await axios.get( { withCredentials: true });
+        // ✅ 엔드포인트 연결 (기존 백엔드 API 경로 기준)
+        const response = await axios.get('http://localhost:8080/api/admin/system/status', { withCredentials: true });
         setSystemStatus(response.data);
       } catch (error) {
         console.error("시스템 현황 로드 실패:", error);
@@ -109,7 +106,6 @@ const AdminDashboard = () => {
       }
     };
 
-    // 데이터 호출 실행
     fetchSecurityData();
     fetchSystemStatus();
     fetchAccountsData();
@@ -121,13 +117,14 @@ const AdminDashboard = () => {
       const data = JSON.parse(event.data);
       setShowAlert(true);
       setAlertCount(prev => prev + 1);
+      
+      // ✅ 실시간 이벤트 발생 시 누적 카운트도 1 증가
       setTotalViolationCount(prev => prev + 1);
 
-      // ✅ 수정: 실시간 알림 추가 시 항상 최신 50개만 유지하도록 슬라이싱
       setSecurityLogs(prevLogs => {
         const newLog = formatLogData(data);
         const updatedLogs = [newLog, ...prevLogs];
-        return updatedLogs.slice(0, 20);
+        return updatedLogs.slice(0, 20); // 테이블은 20개 유지
       });
     });
 
@@ -151,7 +148,7 @@ const AdminDashboard = () => {
           </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-500">자동 갱신 ON</span>
-            <div className="w-10 h-5 bg-green-500 rounded-full relative cursor-pointer">
+            <div className="w-10 h-5 bg-green-500 rounded-full relative cursor-pointer shadow-inner">
               <div className="w-4 h-4 bg-white rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
             </div>
           </div>
@@ -179,7 +176,7 @@ const AdminDashboard = () => {
           showAlert={showAlert} setShowAlert={setShowAlert}
           alertCount={alertCount} setAlertCount={setAlertCount}
           securityLogs={securityLogs}
-          totalViolationCount={totalViolationCount}
+          totalViolationCount={totalViolationCount} // ✅ 전달
         />
       )}
       {activeTab === 'SYSTEM' && <SystemStatusTab systemStatus={systemStatus} />}
@@ -201,7 +198,7 @@ const AdminDashboard = () => {
 const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount }) => (
   <>
     {showAlert && (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 flex justify-between items-center animate-pulse">
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 flex justify-between items-center animate-pulse shadow-sm">
         <div className="flex items-center">
           <ShieldAlert className="text-red-500 mr-3" />
           <p className="text-red-700 font-bold">실시간 경고: 새로운 보안 위협이 {alertCount}건 감지되었습니다.</p>
@@ -210,10 +207,9 @@ const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, sec
       </div>
     )}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      {/* 팁: 전체 개수는 securityLogs.length가 아닌 서버에서 주는 별도 count 상수를 쓰거나 
-          지금처럼 리스트를 제한했다면 이 값은 항상 50건 근처로 고정됩니다. */}
+      {/* ✅ 수정: securityLogs.length 대신 백엔드에서 받은 totalViolationCount 사용 */}
       <StatCard title="차단된 접근" value={`${totalViolationCount}건`} sub="DB 전체 누적 집계" color="bg-red-500" icon={<ShieldAlert size={20} />} />
-      <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20} />} />
+      <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="최근 20건 중 분석" color="bg-orange-500" icon={<Activity size={20} />} />
       <StatCard title="마스킹 성공률" value="97.3%" sub="개인정보 보호" color="bg-green-500" icon={<ShieldCheck size={20} />} />
       <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20} />} />
     </div>
@@ -298,7 +294,7 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts, accountC
       <h3 className="font-bold text-gray-700">계좌 및 역할 조회</h3>
       <div className="flex gap-2">
         {['ALL', 'USER', 'SELLER', 'ADMIN'].map(role => (
-          <button key={role} onClick={() => setSelectedRole(role)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${selectedRole === role ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{role}</button>
+          <button key={role} onClick={() => setSelectedRole(role)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedRole === role ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{role}</button>
         ))}
       </div>
     </div>
@@ -334,18 +330,19 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts, accountC
 );
 
 const StatCard = ({ title, value, sub, color, icon }) => (
-  <div className={`${color} text-white p-5 rounded-2xl shadow-lg relative overflow-hidden`}>
+  <div className={`${color} text-white p-5 rounded-2xl shadow-lg relative overflow-hidden transition-transform hover:scale-[1.02]`}>
     <div className="relative z-10">
       <div className="flex justify-between items-start mb-2"><p className="text-sm opacity-80">{title}</p>{icon}</div>
       <h2 className="text-3xl font-extrabold">{value}</h2><p className="text-xs opacity-70 mt-1">{sub}</p>
     </div>
+    <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-white opacity-10 rounded-full"></div>
   </div>
 );
 
 const MiniMetricCard = ({ title, value, icon, tone }) => {
   const toneMap = { blue: 'bg-blue-50 text-blue-600', slate: 'bg-slate-50 text-slate-600', green: 'bg-green-50 text-green-600', red: 'bg-red-50 text-red-600', orange: 'bg-orange-50 text-orange-600' };
   return (
-    <div className={`border rounded-2xl p-4 ${toneMap[tone]} border-gray-100`}>
+    <div className={`border rounded-2xl p-4 ${toneMap[tone]} border-gray-100 shadow-sm transition-all hover:shadow-md`}>
       <div className="flex justify-between items-center mb-2"><span className="text-xs font-bold opacity-80">{title}</span>{icon}</div>
       <p className="text-2xl font-extrabold text-gray-800">{value}</p>
     </div>
@@ -353,9 +350,9 @@ const MiniMetricCard = ({ title, value, icon, tone }) => {
 };
 
 const AccountCountCard = ({ title, value, icon }) => (
-  <div className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
+  <div className="bg-white border border-gray-100 rounded-2xl p-4 flex justify-between items-center shadow-sm">
     <div><p className="text-xs font-bold text-gray-500 mb-1">{title}</p><p className="text-2xl font-extrabold text-gray-800">{value}</p></div>
-    <div className="text-blue-500">{icon}</div>
+    <div className="p-2 bg-blue-50 rounded-xl text-blue-500">{icon}</div>
   </div>
 );
 
