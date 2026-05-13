@@ -43,7 +43,7 @@ function getMonthRange(monthValue) {
 function SellerDashboardPage() {
   const today = getToday();
 
-  const [sellerId, setSellerId] = useState(1);
+  const [sellerId] = useState(10);
   const [period, setPeriod] = useState('DAILY');
   const [activeTab, setActiveTab] = useState('STAT'); // 🥊 'STAT' 또는 'APPROVAL'
 
@@ -118,9 +118,8 @@ function SellerDashboardPage() {
           <input
             id="sellerId"
             type="number"
-            min="1"
             value={sellerId}
-            onChange={(event) => setSellerId(Number(event.target.value))}
+            readOnly
           />
         </div>
       </section>
