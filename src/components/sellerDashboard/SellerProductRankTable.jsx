@@ -35,10 +35,10 @@ function SellerProductRankTable({ topProducts }) {
                     {product.productName}
                   </td>
                   <td>
-                    {Number(product.salesAmount || 0).toLocaleString()}원
+                    {Number(product.amount || product.salesAmount || 0).toLocaleString()}원
                   </td>
                   <td>
-                    {Number(product.salesCount || 0).toLocaleString()}건
+                    {Number(product.count || product.salesCount || 0).toLocaleString()}건
                   </td>
                 </tr>
               ))}

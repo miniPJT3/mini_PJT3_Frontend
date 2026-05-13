@@ -1,11 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { userInfo } = useAuthStore();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] space-y-12">
+    <div className="flex flex-col items-center justify-center space-y-12 py-10">
+      {/* 지호님! Header는 App.js에서 공통으로 보여주고 있으므로 
+         여기서는 삭제하는 것이 맞습니다. 그래야 두 개가 안 떠요! 
+      */}
+
       {/* 상단 타이틀 섹션 */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-extrabold text-slate-900">
@@ -36,7 +42,7 @@ const Home = () => {
 
         {/* 2. 결제 내역 보기 카드 */}
         <div 
-          onClick={() => navigate('/user/history')} // 이동할 경로는 프로젝트에 맞게 수정하세요
+          onClick={() => navigate('/user/history')}
           className="group cursor-pointer p-10 bg-white rounded-3xl border-2 border-slate-100 shadow-sm hover:border-indigo-500 hover:shadow-xl hover:shadow-indigo-50 transition-all duration-300 text-center space-y-6"
         >
           <div className="text-6xl group-hover:scale-110 transition-transform duration-300">📋</div>
@@ -48,7 +54,6 @@ const Home = () => {
             조회하기
           </div>
         </div>
-
       </div>
 
       {/* 푸터 영역 */}
@@ -59,7 +64,9 @@ const Home = () => {
           </p>
           <div className="flex justify-center items-center gap-2 text-sm text-slate-500">
             <span>Current Role:</span>
-            <span className="font-bold text-blue-600 uppercase">User</span>
+            <span className="font-bold text-blue-600 uppercase">
+              {userInfo?.role || 'User'}
+            </span>
           </div>
         </div>
       </footer>

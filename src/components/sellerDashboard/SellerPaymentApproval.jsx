@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios'; 
+import { paymentApi } from '../../api/paymentApi'; 
 
 const SellerPaymentApproval = ({ sellerId }) => {
-  const [paymentList, setPaymentList] = useState([]); // 🥊 이름 변경: pendingList -> paymentList
+  const [paymentList, setPaymentList] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      // 🥊 백엔드 API가 sellerId의 전체(PENDING, DEPOSITED, PAID)를 주도록 되어있어야 기록이 남습니다.
-      const response = await axios.get(`/api/payments/seller/${sellerId}/history`); 
+      // 🥊 [핵심 수정] axios.get 대신 우리가 만든 api를 사용하고 주소를 고칩니다.
+      // 백엔드 컨트롤러 주소: /api/payments/seller/history
+      const response = await paymentApi.getPendingList(); 
       setPaymentList(response.data);
     } catch (error) {
       console.error("❌ 데이터 로드 실패:", error);

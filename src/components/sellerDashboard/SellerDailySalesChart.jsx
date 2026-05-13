@@ -10,8 +10,8 @@ import {
 
 function SellerDailySalesChart({ dailySales }) {
   const chartData = (dailySales || []).map((item) => ({
-    date: item.statDate,
-    amount: item.dailyAmount,
+    date: item.date ?? item.statDate,
+    amount: Number(item.dailyAmount || 0),
   }));
 
   return (
@@ -26,8 +26,11 @@ function SellerDailySalesChart({ dailySales }) {
           조회된 매출 데이터가 없습니다.
         </div>
       ) : (
-        <div className="seller-chart-box">
-          <ResponsiveContainer width="100%" height={320}>
+        <div
+          className="seller-chart-box"
+          style={{ width: '100%', height: 320, minWidth: 0 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />

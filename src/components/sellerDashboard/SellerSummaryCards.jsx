@@ -1,7 +1,11 @@
 function SellerSummaryCards({ summary }) {
   const totalAmount = summary?.totalAmount || 0;
-  const totalOrderCount = summary?.totalOrderCount || 0;
-  const totalCustomerCount = summary?.totalCustomerCount || 0;
+
+  const totalOrderCount =
+    summary?.totalOrderCount ?? summary?.totalCount ?? 0;
+
+  const totalCustomerCount =
+    summary?.totalCustomerCount ?? summary?.customerCount ?? 0;
 
   return (
     <section className="seller-summary-grid">
@@ -20,7 +24,7 @@ function SellerSummaryCards({ summary }) {
       <div className="seller-summary-card green">
         <span className="seller-summary-title">총 고객수</span>
         <strong>{Number(totalCustomerCount).toLocaleString()}명</strong>
-        <p>결제 완료 기준 고유 고객 수</p>
+        <p>전체 고유 고객 수</p>
       </div>
     </section>
   );
