@@ -19,13 +19,13 @@ const Header = () => {
   return (
     <header className="bg-white shadow-md mb-6">
       <nav className="container mx-auto flex justify-between items-center p-4">
-        {/* 로고: 로그인 상태면 홈으로, 아니면 로그인창으로 */}
-        <Link to={isLoggedIn ? "/user/home" : "/login"} className="flex items-center gap-2">
+        {/* ⭐ 로고 수정 부분: Link 태그를 div로 변경하고 cursor-default 추가 */}
+        <div className="flex items-center gap-2 cursor-default">
           <div className="text-2xl font-bold text-indigo-700 tracking-tight">
             가상계좌 결제 시스템
             <span className="block text-xs font-normal text-gray-400">Virtual Account Payment</span>
           </div>
-        </Link>
+        </div>
         
         <div className="flex gap-6 items-center">
           {/* ⭐ isLoggedIn이 true일 때만 메뉴 노출 */}

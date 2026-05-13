@@ -19,7 +19,7 @@ const Simulator = () => {
     setIsProcessing(true);
 
     try {
-      const response = await axios.post('http://localhost:8080/api/simulator/validate', {
+      const response = await axios.post('/api/simulator/validate', {
         accountNumber: account,
         amount: amount,
         email: email // 이메일 데이터 추가 전송
