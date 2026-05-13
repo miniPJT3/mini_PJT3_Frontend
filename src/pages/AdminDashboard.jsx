@@ -82,7 +82,7 @@ const AdminDashboard = () => {
     // 2. 시스템 현황 로드
     const fetchSystemStatus = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/admin/system-status', { withCredentials: true });
+        const response = await axios.get('/api/admin/system-status', { withCredentials: true });
         setSystemStatus(response.data);
       } catch (error) {
         console.error("시스템 현황 로드 실패:", error);
