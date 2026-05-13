@@ -71,8 +71,8 @@ const AdminDashboard = () => {
     const fetchSecurityData = async () => {
       try {
         const [logsRes, countRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/sse/logs', { withCredentials: true }),
-          axios.get('http://localhost:8080/api/admin/security/violations/count', { withCredentials: true }) // ✅ 백엔드에 추가한 API
+          axios.get('/api/sse/logs', { withCredentials: true }),
+          axios.get('/api/admin/security/violations/count', { withCredentials: true }) // ✅ 백엔드에 추가한 API
         ]);
         setSecurityLogs(logsRes.data.map(log => formatLogData(log)).slice(0, 20));
         setTotalViolationCount(countRes.data); // ✅ 초기 누적 카운트 설정
@@ -85,7 +85,7 @@ const AdminDashboard = () => {
     const fetchSystemStatus = async () => {
       try {
         // ✅ 엔드포인트 연결 (기존 백엔드 API 경로 기준)
-        const response = await axios.get('http://localhost:8080/api/admin/system/status', { withCredentials: true });
+        const response = await axios.get('/api/admin/system/status', { withCredentials: true });
         setSystemStatus(response.data);
       } catch (error) {
         console.error("시스템 현황 로드 실패:", error);
@@ -96,8 +96,8 @@ const AdminDashboard = () => {
     const fetchAccountsData = async () => {
       try {
         const [countsRes, listRes] = await Promise.all([
-          axios.get('http://localhost:8080/api/admin/accounts/role-counts', { withCredentials: true }),
-          axios.get('http://localhost:8080/api/admin/accounts', { withCredentials: true })
+          axios.get('/api/admin/accounts/role-counts', { withCredentials: true }),
+          axios.get('/api/admin/accounts', { withCredentials: true })
         ]);
         setAccountCounts(countsRes.data);
         setAccounts(listRes.data);
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
     fetchAccountsData();
 
     // SSE 연결
-    const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
+    const eventSource = new EventSource('/api/sse/connect/admin', { withCredentials: true });
     
     eventSource.addEventListener('security-alert', (event) => {
       const data = JSON.parse(event.data);

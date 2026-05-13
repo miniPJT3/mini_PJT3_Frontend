@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 공통 설정이 담긴 인스턴스 생성
 const api = axios.create({
-  baseURL: 'http://localhost:8080/api', 
+  baseURL: '/api', 
   withCredentials: true, // 세션 로그인을 유지하기 위해 필수!
 });
 
