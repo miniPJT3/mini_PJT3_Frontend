@@ -25,6 +25,7 @@ const formatDateTime = (value) => {
 
 const formatMoney = (value) => `${value.toLocaleString('ko-KR')}원`;
 
+
 const initialLineData = [{ time: '현재', threat: 0 }];
 const barData = [
   { name: '계좌', val: 100 },
@@ -43,7 +44,8 @@ const AdminDashboard = () => {
   const [securityLogs, setSecurityLogs] = useState([]);
   const [totalViolationCount, setTotalViolationCount] = useState(0);
   const [selectedRole, setSelectedRole] = useState('ALL');
-  
+  const [isAuditing, setIsAuditing] = useState(false);
+
 
   // 시스템 현황 상태
   const [systemStatus, setSystemStatus] = useState({
@@ -55,8 +57,8 @@ const AdminDashboard = () => {
   });
 
   // 계정 현황 상태
-  const [accountCounts, setAccountCounts] = useState({ 
-    totalCount: 0, userCount: 0, sellerCount: 0, adminCount: 0 
+  const [accountCounts, setAccountCounts] = useState({
+    totalCount: 0, userCount: 0, sellerCount: 0, adminCount: 0
   });
   const [accounts, setAccounts] = useState([]);
 
@@ -115,7 +117,7 @@ const AdminDashboard = () => {
 
     // SSE 연결
     const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
-    
+
     eventSource.addEventListener('security-alert', (event) => {
       const data = JSON.parse(event.data);
       setShowAlert(true);
@@ -136,6 +138,26 @@ const AdminDashboard = () => {
   const filteredAccounts = useMemo(() => {
     return selectedRole === 'ALL' ? accounts : accounts.filter(a => a.role === selectedRole);
   }, [selectedRole, accounts]);
+
+
+  // 마스킹 감사 실행 함수
+  const handleRunMaskingAudit = async () => {
+    if (!window.confirm("전체 결제 데이터의 마스킹 무결성을 전수 조사하시겠습니까?")) return;
+
+    setIsAuditing(true);
+    try {
+      const response = await axios.post('http://localhost:8080/api/admin/security/masking-audits/run', {}, { withCredentials: true });
+      alert(`보안 점검 완료! 총 ${response.data.checkedCount}건의 데이터를 확인했습니다.`);
+
+      // ✅ 감사 완료 후 데이터 갱신을 위해 기존 fetch 함수 재호출 (필요 시)
+      // window.location.reload(); // 가장 간단한 방법 혹은 fetchSecurityData()를 밖으로 빼서 호출
+    } catch (error) {
+      console.error("보안 감사 실행 실패:", error);
+      alert("감사 실행 중 오류가 발생했습니다.");
+    } finally {
+      setIsAuditing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -163,9 +185,8 @@ const AdminDashboard = () => {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-4 px-2 text-lg font-black transition-all whitespace-nowrap ${
-              activeTab === tab ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'
-            }`}
+            className={`pb-4 px-2 text-lg font-black transition-all whitespace-nowrap ${activeTab === tab ? 'text-blue-600 border-b-4 border-blue-600' : 'text-slate-400 hover:text-slate-600'
+              }`}
           >
             {tab === 'MONITORING' ? '실시간 모니터링' : tab === 'SYSTEM' ? '전체 시스템 요약' : '사용자 계정 조회'}
           </button>
@@ -179,6 +200,8 @@ const AdminDashboard = () => {
           alertCount={alertCount} setAlertCount={setAlertCount}
           securityLogs={securityLogs}
           totalViolationCount={totalViolationCount}
+          handleRunMaskingAudit={handleRunMaskingAudit} 
+          isAuditing={isAuditing}
         />
       )}
       {activeTab === 'SYSTEM' && <SystemStatusTab systemStatus={systemStatus} />}
@@ -197,7 +220,7 @@ const AdminDashboard = () => {
 // Sub Components (Tab Content)
 // ======================================
 
-const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount }) => (
+const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount, handleRunMaskingAudit, isAuditing }) => (
   <>
     {showAlert && (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 flex justify-between items-center animate-pulse">
@@ -220,6 +243,25 @@ const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, sec
       <ChartCard title="실시간 위험 추이" data={initialLineData} type="line" />
       <ChartCard title="데이터 마스킹 감사" data={barData} type="bar" />
     </div>
+
+    {/* 🥊 [추가 위치] 보안 탐지 히스토리 테이블 바로 위 */}
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-lg font-black text-gray-700 flex items-center gap-2">
+        <ListChecks size={20} className="text-blue-600" /> 탐지 내역 관리
+      </h3>
+      <button
+        onClick={handleRunMaskingAudit}
+        disabled={isAuditing}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm transition-all shadow-sm
+          ${isAuditing 
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
+      >
+        <ShieldCheck size={18} className={isAuditing ? "animate-spin" : ""} />
+        {isAuditing ? "감사 진행 중..." : "실시간 보안 감사 실행"}
+      </button>
+    </div>
+    
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-5 border-b border-gray-100 font-bold text-gray-700">보안 탐지 히스토리 (최근 20건)</div>
       <div className="overflow-x-auto">
