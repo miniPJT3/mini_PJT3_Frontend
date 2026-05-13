@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+//확인용 주석
 // 공통 설정이 담긴 인스턴스 생성
 const api = axios.create({
   baseURL: '/api', 
