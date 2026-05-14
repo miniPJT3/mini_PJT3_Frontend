@@ -9,7 +9,7 @@ import {
 
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid,
+  LineChart, Line, CartesianGrid,Cell
 } from 'recharts';
 
 // ======================================
@@ -45,6 +45,15 @@ const AdminDashboard = () => {
   const [totalViolationCount, setTotalViolationCount] = useState(0);
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [isAuditing, setIsAuditing] = useState(false);
+
+  // 🥊 요약 데이터 상태 선언 (최상단)
+  const [summaryData, setSummaryData] = useState({
+    totalAuditCount: 0,
+    successRate: 0,
+    totalViolations: 0,
+    openAlertCount: 0,
+    adminAccessLast24Hours: 0
+  });
 
 
   // 시스템 현황 상태
@@ -110,10 +119,21 @@ const AdminDashboard = () => {
       }
     };
 
+    // 요약 데이터를 가져오는 함수 정의 🥊
+    const fetchSummaryData = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/admin/security/summary', { withCredentials: true });
+        setSummaryData(response.data); // 🥊 서버에서 받은 데이터를 상태에 저장!
+      } catch (error) {
+        console.error("요약 데이터 로드 실패:", error);
+      }
+    };
+
     // 데이터 호출 실행
     fetchSecurityData();
     fetchSystemStatus();
     fetchAccountsData();
+    fetchSummaryData();
 
     // SSE 연결
     const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
@@ -200,8 +220,9 @@ const AdminDashboard = () => {
           alertCount={alertCount} setAlertCount={setAlertCount}
           securityLogs={securityLogs}
           totalViolationCount={totalViolationCount}
-          handleRunMaskingAudit={handleRunMaskingAudit} 
+          handleRunMaskingAudit={handleRunMaskingAudit}
           isAuditing={isAuditing}
+          summaryData={summaryData}
         />
       )}
       {activeTab === 'SYSTEM' && <SystemStatusTab systemStatus={systemStatus} />}
@@ -220,72 +241,93 @@ const AdminDashboard = () => {
 // Sub Components (Tab Content)
 // ======================================
 
-const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount, handleRunMaskingAudit, isAuditing }) => (
-  <>
-    {showAlert && (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 flex justify-between items-center animate-pulse">
-        <div className="flex items-center">
-          <ShieldAlert className="text-red-500 mr-3" />
-          <p className="text-red-700 font-bold">실시간 경고: 새로운 보안 위협이 {alertCount}건 감지되었습니다.</p>
-        </div>
-        <button onClick={() => { setShowAlert(false); setAlertCount(0); }} className="bg-red-100 text-red-700 px-3 py-1 rounded text-sm font-bold hover:bg-red-200">확인</button>
-      </div>
-    )}
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      {/* 팁: 전체 개수는 securityLogs.length가 아닌 서버에서 주는 별도 count 상수를 쓰거나 
-          지금처럼 리스트를 제한했다면 이 값은 항상 50건 근처로 고정됩니다. */}
-      <StatCard title="차단된 접근" value={`${totalViolationCount}건`} sub="DB 전체 누적 집계" color="bg-red-500" icon={<ShieldAlert size={20} />} />
-      <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20} />} />
-      <StatCard title="마스킹 성공률" value="97.3%" sub="개인정보 보호" color="bg-green-500" icon={<ShieldCheck size={20} />} />
-      <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20} />} />
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      <ChartCard title="실시간 위험 추이" data={initialLineData} type="line" />
-      <ChartCard title="데이터 마스킹 감사" data={barData} type="bar" />
-    </div>
+const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount, handleRunMaskingAudit, isAuditing, summaryData }) => {
 
-    {/* 🥊 [추가 위치] 보안 탐지 히스토리 테이블 바로 위 */}
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-lg font-black text-gray-700 flex items-center gap-2">
-        <ListChecks size={20} className="text-blue-600" /> 탐지 내역 관리
-      </h3>
-      <button
-        onClick={handleRunMaskingAudit}
-        disabled={isAuditing}
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm transition-all shadow-sm
-          ${isAuditing 
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
-      >
-        <ShieldCheck size={18} className={isAuditing ? "animate-spin" : ""} />
-        {isAuditing ? "감사 진행 중..." : "실시간 보안 감사 실행"}
-      </button>
-    </div>
-    
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-5 border-b border-gray-100 font-bold text-gray-700">보안 탐지 히스토리 (최근 20건)</div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr><th className="p-4">탐지 시간</th><th className="p-4">엔드포인트</th><th className="p-4">상태</th><th className="p-4">위험 등급</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50 text-sm">
-            {securityLogs.length > 0 ? securityLogs.map(log => (
-              <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-4 text-gray-400">{log.time}</td>
-                <td className="p-4 font-mono text-blue-600">{log.endpoint}</td>
-                <td className="p-4 text-red-500 font-medium">{log.status}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${log.risk === 'HIGH' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>{log.risk}</span>
-                </td>
-              </tr>
-            )) : <tr><td colSpan="4" className="p-10 text-center text-gray-400">탐지 기록이 없습니다.</td></tr>}
-          </tbody>
-        </table>
+  // 🥊 백엔드 응답 필드명(totalMaskingAuditCount, maskingSuccessRate)에 맞춰서 추출!
+  const currentSuccessRate = summaryData?.maskingSuccessRate ?? 0;
+  const currentTotalAudit = summaryData?.totalMaskingAuditCount ?? 0;
+
+  // 🥊 누적 위반 건수도 응답 필드명(violationsLast24Hours)에 맞게 연동 가능
+  const currentViolations = summaryData?.violationsLast24Hours ?? totalViolationCount;
+
+  // 🥊 2. 백엔드에서 실시간 계산해서 보내준 항목별 성공률 매핑
+  const dynamicBarData = [
+    { name: '계좌', val: summaryData?.accountRate ?? 0 },
+    { name: '이름', val: summaryData?.nameRate ?? 0 },
+    { name: '이메일', val: summaryData?.emailRate ?? 0 },
+    { name: '전화번호', val: summaryData?.phoneRate ?? 0 },
+  ];
+
+  return (
+    <>
+      {/* ... 경고창 로직 ... */}
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* 🥊 차단된 접근 수치 연동 */}
+        <StatCard title="차단된 접근" value={`${currentViolations}건`} sub="실시간 탐지 집계" color="bg-red-500" icon={<ShieldAlert size={20} />} />
+        <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20} />} />
+
+        <StatCard
+          title="마스킹 성공률"
+          // 🥊 이제 93.2% 가 딱 찍힐 겁니다!
+          value={`${currentSuccessRate}%`}
+          sub={`총 ${currentTotalAudit}건 검사 완료`}
+          color={currentSuccessRate > 95 ? "bg-green-500" : "bg-red-500"}
+          icon={<ShieldCheck size={20} />}
+        />
+
+        <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20} />} />
       </div>
-    </div>
-  </>
-);
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <ChartCard title="실시간 위험 추이" data={initialLineData} type="line" />
+        {/* 실시간 값이 반영된 dynamicBarData 주입 */}
+        <ChartCard title="데이터 마스킹 감사" data={dynamicBarData} type="bar" />
+      </div>
+
+      {/* 탐지 내역 관리 및 테이블 (기본 로직 유지) */}
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-black text-gray-700 flex items-center gap-2">
+          <ListChecks size={20} className="text-blue-600" /> 탐지 내역 관리
+        </h3>
+        <button
+          onClick={handleRunMaskingAudit}
+          disabled={isAuditing}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm transition-all shadow-sm
+            ${isAuditing
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
+        >
+          <ShieldCheck size={18} className={isAuditing ? "animate-spin" : ""} />
+          {isAuditing ? "감사 진행 중..." : "실시간 보안 감사 실행"}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 font-bold text-gray-700">보안 탐지 히스토리 (최근 20건)</div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <tr><th className="p-4">탐지 시간</th><th className="p-4">엔드포인트</th><th className="p-4">상태</th><th className="p-4">위험 등급</th></tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 text-sm">
+              {securityLogs.length > 0 ? securityLogs.map(log => (
+                <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="p-4 text-gray-400">{log.time}</td>
+                  <td className="p-4 font-mono text-blue-600">{log.endpoint}</td>
+                  <td className="p-4 text-red-500 font-medium">{log.status}</td>
+                  <td className="p-4">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${log.risk === 'HIGH' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>{log.risk}</span>
+                  </td>
+                </tr>
+              )) : <tr><td colSpan="4" className="p-10 text-center text-gray-400">탐지 기록이 없습니다.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
+  );
+};
 
 const SystemStatusTab = ({ systemStatus }) => {
   const dynamicDetailRows = [
@@ -416,8 +458,27 @@ const ChartCard = ({ title, data, type }) => (
         ) : (
           <BarChart data={data}>
             <XAxis dataKey="name" stroke="#999" fontSize={12} />
-            <YAxis stroke="#999" fontSize={12} />
-            <Tooltip /><Bar dataKey="val" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
+            {/* 🥊 Y축 범위를 80~100으로 설정해서 미세한 차이를 극대화함 */}
+            <YAxis
+              stroke="#999"
+              fontSize={12}
+              domain={[90, 100]}
+              allowDataOverflow={true}
+              tickLine={false}
+              axisLine={false}
+            />
+
+            <Tooltip cursor={{ fill: 'transparent' }} />
+
+            <Bar dataKey="val" radius={[6, 6, 0, 0]} barSize={40}>
+              {/* 🥊 데이터 값에 따라 막대 색상을 다르게 줘서 위험도를 시각화함 */}
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.val >= 98 ? '#10b981' : entry.val >= 95 ? '#f59e0b' : '#ef4444'}
+                />
+              ))}
+            </Bar>
           </BarChart>
         )}
       </ResponsiveContainer>
