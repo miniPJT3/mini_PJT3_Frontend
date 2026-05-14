@@ -36,7 +36,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # 제공해주신 멀티스테이지 Dockerfile을 사용하여 빌드
-          docker build -t $ECR_URL:$IMAGE_TAG -f docker/Dockerfile.
+          docker build -t $ECR_URL:$IMAGE_TAG -f docker/Dockerfile .
           docker push $ECR_URL:$IMAGE_TAG
 
       # 2. 인프라 리포지토리(mini_PJT3_Infra) 체크아웃
