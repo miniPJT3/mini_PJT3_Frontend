@@ -4,7 +4,7 @@ import axios from 'axios';
 import {
   ShieldAlert, Activity, Search, ShieldCheck, PlayCircle, Wallet,
   ShoppingCart, CheckCircle2, XCircle, Percent, Users, Store,
-  UserCog, UserRound, ListChecks,
+  UserCog, UserRound, ListChecks,RefreshCcw
 } from 'lucide-react';
 
 import {
@@ -46,6 +46,8 @@ const AdminDashboard = () => {
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [isAuditing, setIsAuditing] = useState(false);
 
+  //실시간 위험 추이 데이터를 저장할 상태
+  const [threatTrendData, setThreatTrendData] = useState([{ time: '연결중', threat: 0 }]);
 
   // 시스템 현황 상태
   const [systemStatus, setSystemStatus] = useState({
@@ -70,6 +72,16 @@ const AdminDashboard = () => {
     risk: data.statusCode === 403 ? 'HIGH' : 'MEDIUM',
     violationType: data.violationType
   });
+
+  // 위험 추이 데이터를 가져오는 함수
+  const fetchThreatTrend = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/admin/security/threat-trend', { withCredentials: true });
+      setThreatTrendData(response.data);
+    } catch (error) {
+      console.error("위험 추이 로드 실패:", error);
+    }
+  };
 
   useEffect(() => {
     // 1. 기존 보안 로그 로드 (최대 20건으로 제한)
@@ -114,6 +126,7 @@ const AdminDashboard = () => {
     fetchSecurityData();
     fetchSystemStatus();
     fetchAccountsData();
+    fetchThreatTrend(); //초기 렌더링 시 위험 추이 데이터 호출
 
     // SSE 연결
     const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
@@ -124,7 +137,10 @@ const AdminDashboard = () => {
       setAlertCount(prev => prev + 1);
       setTotalViolationCount(prev => prev + 1);
 
-      // ✅ 수정: 실시간 알림 추가 시 항상 최신 50개만 유지하도록 슬라이싱
+      //새로운 보안 위협이 감지될 때마다 그래프도 갱신
+      fetchThreatTrend();
+
+      //실시간 알림 추가 시 항상 최신 50개만 유지하도록 슬라이싱
       setSecurityLogs(prevLogs => {
         const newLog = formatLogData(data);
         const updatedLogs = [newLog, ...prevLogs];
@@ -149,7 +165,7 @@ const AdminDashboard = () => {
       const response = await axios.post('http://localhost:8080/api/admin/security/masking-audits/run', {}, { withCredentials: true });
       alert(`보안 점검 완료! 총 ${response.data.checkedCount}건의 데이터를 확인했습니다.`);
 
-      // ✅ 감사 완료 후 데이터 갱신을 위해 기존 fetch 함수 재호출 (필요 시)
+      //감사 완료 후 데이터 갱신을 위해 기존 fetch 함수 재호출
       // window.location.reload(); // 가장 간단한 방법 혹은 fetchSecurityData()를 밖으로 빼서 호출
     } catch (error) {
       console.error("보안 감사 실행 실패:", error);
@@ -202,6 +218,8 @@ const AdminDashboard = () => {
           totalViolationCount={totalViolationCount}
           handleRunMaskingAudit={handleRunMaskingAudit} 
           isAuditing={isAuditing}
+          //차트에 전달할 실시간 데이터를 props로 넘김
+          threatTrendData={threatTrendData}
         />
       )}
       {activeTab === 'SYSTEM' && <SystemStatusTab systemStatus={systemStatus} />}
@@ -220,7 +238,7 @@ const AdminDashboard = () => {
 // Sub Components (Tab Content)
 // ======================================
 
-const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount, handleRunMaskingAudit, isAuditing }) => (
+const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, securityLogs, totalViolationCount, handleRunMaskingAudit, isAuditing, threatTrendData }) => (
   <>
     {showAlert && (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 flex justify-between items-center animate-pulse">
@@ -232,19 +250,17 @@ const MonitoringTab = ({ showAlert, setShowAlert, alertCount, setAlertCount, sec
       </div>
     )}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      {/* 팁: 전체 개수는 securityLogs.length가 아닌 서버에서 주는 별도 count 상수를 쓰거나 
-          지금처럼 리스트를 제한했다면 이 값은 항상 50건 근처로 고정됩니다. */}
       <StatCard title="차단된 접근" value={`${totalViolationCount}건`} sub="DB 전체 누적 집계" color="bg-red-500" icon={<ShieldAlert size={20} />} />
       <StatCard title="고위험 위협" value={`${securityLogs.filter(l => l.risk === 'HIGH').length}건`} sub="즉시 조치 필요" color="bg-orange-500" icon={<Activity size={20} />} />
       <StatCard title="마스킹 성공률" value="97.3%" sub="개인정보 보호" color="bg-green-500" icon={<ShieldCheck size={20} />} />
       <StatCard title="평균 응답 시간" value="0.3초" sub="탐지부터 차단까지" color="bg-blue-500" icon={<Search size={20} />} />
     </div>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      <ChartCard title="실시간 위험 추이" data={initialLineData} type="line" />
+      <ChartCard title="최근 3시간 위험 추이" data={threatTrendData} type="line" />
       <ChartCard title="데이터 마스킹 감사" data={barData} type="bar" />
     </div>
 
-    {/* 🥊 [추가 위치] 보안 탐지 히스토리 테이블 바로 위 */}
+    {/*보안 탐지 히스토리 테이블 바로 위 */}
     <div className="flex justify-between items-center mb-4">
       <h3 className="text-lg font-black text-gray-700 flex items-center gap-2">
         <ListChecks size={20} className="text-blue-600" /> 탐지 내역 관리
