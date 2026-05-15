@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
+import ProtectedRoute from './components/ProtectedRoute'; // 🥊 아까 만든 문지기 컴포넌트 임포트!
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from "./pages/AdminDashboard"; 
@@ -18,40 +19,62 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50">
-        {/* 모든 페이지에서 공통으로 사용되는 헤더 */}
         <Header />
 
         <main className="container mx-auto px-4 py-8">
           <Routes>
-            {/*기본 경로: 로그인 페이지로 설정 */}
+            {/* 🥊 1. 로그인 없이 접근 가능한 경로 */}
             <Route path="/" element={<Navigate to="/login" replace />} />
-            {/*구글 로그인 성공 후 이동 설정 */}
-            <Route path="/additional-info" element={<AdditionalInfo />} />
-
-            {/*공통 인증 경로 */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/additional-info" element={<AdditionalInfo />} />
 
-            {/*관리자(Admin) 경로 */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            {/* 🥊 2. 관리자(Admin) 전용 경로: 오직 ADMIN만! */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/simulator" element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <Simulator />
+              </ProtectedRoute>
+            } />
 
-            {/*판매자(Seller) 경로 그룹화 */}
+            {/* 🥊 3. 판매자(Seller) 전용 경로: SELLER와 ADMIN만! (USER는 차단) */}
             <Route path="/seller">
-              <Route path="dashboard" element={<SellerDashboardPage />} />
+              <Route path="dashboard" element={
+                <ProtectedRoute allowedRoles={['SELLER']}>
+                  <SellerDashboardPage />
+                </ProtectedRoute>
+              } />
             </Route>
 
-            {/*사용자(User) 경로 그룹화 */}
+            {/* 🥊 4. 사용자(User) 전용 경로: USER와 ADMIN만! (SELLER는 차단) */}
             <Route path="/user">
-              <Route path="home" element={<Home />} />
-              <Route path="payment" element={<Payment />} />
-              <Route path="virtual-account" element={<VirtualAccount />} />
-              <Route path="history" element={<PaymentHistory />} />
+              <Route path="home" element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <Home />
+                </ProtectedRoute>
+              } />
+              <Route path="payment" element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <Payment />
+                </ProtectedRoute>
+              } />
+              <Route path="virtual-account" element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <VirtualAccount />
+                </ProtectedRoute>
+              } />
+              <Route path="history" element={
+                <ProtectedRoute allowedRoles={['USER']}>
+                  <PaymentHistory />
+                </ProtectedRoute>
+              } />
             </Route>
 
-            {/*시뮬레이터 (계좌 이체 등 테스트용) */}
-            <Route path="/simulator" element={<Simulator />} />
-
-            {/* 정의되지 않은 모든 경로는 홈(로그인)으로 리다이렉트 */}
+            {/* 정의되지 않은 경로 */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
