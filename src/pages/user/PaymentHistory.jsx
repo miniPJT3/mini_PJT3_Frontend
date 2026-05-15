@@ -7,6 +7,7 @@ const PaymentHistory = () => {
   const navigate = useNavigate();
   const [historyList, setHistoryList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("전체 상태");
@@ -41,6 +42,20 @@ const PaymentHistory = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // 🥊 수정 포인트 1: 백엔드 DB 상태를 만료로 바꾸는 함수 추가
+  const handleExpire = async (payUuid) => {
+    try {
+      // paymentApi에 정의된 expirePayment 호출 (이미 백엔드에 만드신 로직)
+      await paymentApi.expirePayment(payUuid);
+      // DB가 바뀌었으므로 목록을 다시 새로고침하여 UI 동기화
+      const response = await paymentApi.getMyHistory();
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      setHistoryList(data);
+    } catch (error) {
+      console.error("만료 처리 중 오류:", error);
+    }
+  };
+
   const handleDirectDeposit = (item) => {
     const stateData = {
       payUuid: item.payUuid,
@@ -56,15 +71,19 @@ const PaymentHistory = () => {
     alert(`[영수증]\n상품명: ${item.productName}\n결제금액: ${item.depositedAmount.toLocaleString()}원\n상태: 결제 완료`);
   };
 
-  const getRemainingTime = (expiredAt) => {
-  if (!expiredAt) return "만료 정보 없음";
+  // 🥊 수정 포인트 2: 시간이 0이 될 때 handleExpire를 호출하도록 수정
+  const getRemainingTime = (item) => {
+  if (!item.expiredAt) return "만료 정보 없음";
 
   const now = new Date();
-  const expired = new Date(expiredAt);
-
+  const expired = new Date(item.expiredAt);
   const diffMs = expired - now;
 
   if (diffMs <= 0) {
+    // 🥊 입금 대기(PENDING) 또는 입금 완료 후 승인 대기(DEPOSITED) 상태에서 시간이 다 된 경우
+    if (item.status === 'PENDING' || item.status === 'DEPOSITED') {
+      handleExpire(item.payUuid); // 백엔드 호출하여 EXPIRED로 변경
+    }
     return "만료됨";
   }
 
@@ -80,6 +99,7 @@ const PaymentHistory = () => {
       case 'PAID': return { label: '결제 완료', color: 'bg-green-50 text-green-600', icon: <FiCheckCircle className="w-4 h-4" /> };
       case 'DEPOSITED': return { label: '입금 완료 (승인 대기)', color: 'bg-blue-50 text-blue-600', icon: <FiLoader className="w-4 h-4 animate-spin" /> }; // 🥊 추가
       case 'PENDING': return { label: '입금 대기중', color: 'bg-amber-50 text-amber-600', icon: <FiClock className="w-4 h-4" /> };
+      case 'EXPIRED': return { label: '기한 만료', color: 'bg-red-50 text-red-400', icon: <FiAlertCircle className="w-4 h-4" /> };
       case 'CANCELLED': return { label: '결제 취소', color: 'bg-red-50 text-red-600', icon: <FiAlertCircle className="w-4 h-4" /> };
       default: return { label: status, color: 'bg-gray-100 text-gray-600', icon: <FiAlertCircle className="w-4 h-4" /> };
     }
@@ -87,7 +107,7 @@ const PaymentHistory = () => {
 
   // 🥊 수정 포인트 2: 필터링 조건에 '입금 완료' 추가
   const totalPaidAmount = historyList
-    .filter(item => item.status === 'PAID')// 입금 완료도 합계에 포함 (지호님 선택)
+    .filter(item => item.status === 'PAID')// 입금 완료도 합계에 포함 
     .reduce((sum, item) => sum + (item.depositedAmount || 0), 0);
 
   const completedCount = historyList.filter(item => item.status === 'PAID').length;
@@ -199,7 +219,7 @@ const PaymentHistory = () => {
                   hour12: true,
                 })
               : '만료 정보 없음';
-              const remainingTime = getRemainingTime(item.expiredAt);
+              const remainingTime = getRemainingTime(item);
 
             return (
               <div key={index} className="bg-white rounded-[1.5rem] p-8 shadow-lg shadow-slate-200/50 border border-slate-100 transition-all hover:border-blue-200">
