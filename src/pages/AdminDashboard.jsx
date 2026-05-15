@@ -23,6 +23,26 @@ const formatDateTime = (value) => {
   });
 };
 
+const ROLE_LABELS = {
+  ALL: '전체',
+  USER: '사용자',
+  SELLER: '판매자',
+  ADMIN: '관리자',
+};
+
+const ROLE_FILTERS = [
+  { value: 'ALL', label: '전체' },
+  { value: 'USER', label: '사용자' },
+  { value: 'SELLER', label: '판매자' },
+  { value: 'ADMIN', label: '관리자' },
+];
+
+const ROLE_BADGE_STYLES = {
+  USER: 'bg-green-100 text-green-700 border border-green-200',
+  SELLER: 'bg-purple-100 text-purple-700 border border-purple-200',
+  ADMIN: 'bg-red-100 text-red-700 border border-red-200',
+};
+
 // ======================================
 // Main Dashboard Component
 // ======================================
@@ -362,36 +382,73 @@ const SystemStatusTab = ({ systemStatus }) => {
 const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts, accountCounts }) => (
   <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-      <h3 className="font-bold text-gray-700">계좌 및 역할 조회</h3>
+      <h3 className="font-bold text-gray-700">계정 및 역할 조회</h3>
+
       <div className="flex gap-2">
-        {['ALL', 'USER', 'SELLER', 'ADMIN'].map(role => (
-          <button key={role} onClick={() => setSelectedRole(role)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${selectedRole === role ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{role}</button>
+        {ROLE_FILTERS.map(role => (
+          <button
+            key={role.value}
+            onClick={() => setSelectedRole(role.value)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              selectedRole === role.value
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+            }`}
+          >
+            {role.label}
+          </button>
         ))}
       </div>
     </div>
+
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-gray-50/60 border-b">
       <AccountCountCard title="전체" value={accountCounts.totalCount} icon={<Users size={18} />} />
       <AccountCountCard title="사용자" value={accountCounts.userCount} icon={<UserRound size={18} />} />
       <AccountCountCard title="판매자" value={accountCounts.sellerCount} icon={<Store size={18} />} />
       <AccountCountCard title="관리자" value={accountCounts.adminCount} icon={<UserCog size={18} />} />
     </div>
+
     <div className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead className="bg-white text-gray-500 text-xs uppercase border-b">
-          <tr><th className="p-4">이름</th><th className="p-4">이메일</th><th className="p-4">로그인 ID</th><th className="p-4">역할</th><th className="p-4">가입일</th></tr>
+          <tr>
+            <th className="p-4">이름</th>
+            <th className="p-4">이메일</th>
+            <th className="p-4">로그인 ID</th>
+            <th className="p-4">역할</th>
+            <th className="p-4">가입일</th>
+          </tr>
         </thead>
+
         <tbody className="divide-y divide-gray-50">
-          {filteredAccounts.map(account => (
-            <tr key={account.id} className="hover:bg-gray-50 transition-colors">
-              <td className="p-4 font-semibold text-gray-700">{account.name}</td>
-              <td className="p-4 text-gray-600">{account.email}</td>
-              <td className="p-4 font-mono text-blue-600">{account.username}</td>
-              <td className="p-4">
-                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">{account.roleName || account.role}</span>
+          {filteredAccounts.map(account => {
+            const role = account.role;
+            const roleLabel = ROLE_LABELS[role] || account.roleName || role;
+            const badgeStyle =
+              ROLE_BADGE_STYLES[role] || 'bg-gray-100 text-gray-600 border border-gray-200';
+
+            return (
+              <tr key={account.id} className="hover:bg-gray-50 transition-colors">
+                <td className="p-4 font-semibold text-gray-700">{account.name}</td>
+                <td className="p-4 text-gray-600">{account.email}</td>
+                <td className="p-4 font-mono text-blue-600">{account.username}</td>
+                <td className="p-4">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badgeStyle}`}>
+                    {roleLabel}
+                  </span>
+                </td>
+                <td className="p-4 text-gray-400">{formatDateTime(account.createdAt)}</td>
+              </tr>
+            );
+          })}
+
+          {filteredAccounts.length === 0 && (
+            <tr>
+              <td colSpan="5" className="p-10 text-center text-gray-400">
+                조회된 계정이 없습니다.
               </td>
-              <td className="p-4 text-gray-400">{formatDateTime(account.createdAt)}</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
