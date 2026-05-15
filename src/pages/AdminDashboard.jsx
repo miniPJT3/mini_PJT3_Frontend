@@ -57,7 +57,7 @@ const AdminDashboard = () => {
 
   // 실시간 위험 추이 데이터를 저장할 상태
   const [threatTrendData, setThreatTrendData] = useState([{ time: '연결중', threat: 0 }]);
-  
+
   // 요약 데이터 상태 선언
   const [summaryData, setSummaryData] = useState({
     maskingSuccessRate: 0,
@@ -104,6 +104,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
+    // 1. 초기 데이터 로딩 함수들
     const fetchSecurityData = async () => {
       try {
         const [logsRes, countRes] = await Promise.all([
@@ -150,6 +151,7 @@ const AdminDashboard = () => {
       }
     };
 
+    // 초기 호출 실행
     fetchSecurityData();
     fetchSystemStatus();
     fetchAccountsData();
@@ -158,6 +160,12 @@ const AdminDashboard = () => {
 
     const eventSource = new EventSource('/api/sse/connect/admin', { withCredentials: true });
 
+    //연결 성공 시 로그 (디버깅용)
+    eventSource.onopen = () => {
+      console.log("SSE 연결이 성공적으로 수립되었습니다.");
+    };
+
+    //보안 알림 수신 (이름이 'security-alert'인 것만 처리하므로 핑 데이터는 무시됨)
     eventSource.addEventListener('security-alert', (event) => {
       const data = JSON.parse(event.data);
       setShowAlert(true);
@@ -170,7 +178,22 @@ const AdminDashboard = () => {
       });
     });
 
-    return () => eventSource.close();
+    //핑(Heartbeat) 수신 확인
+    eventSource.addEventListener('ping', (event) => {
+      console.log("Keep-alive: 서버로부터 핑을 수신했습니다.");
+    });
+
+    //에러 핸들링
+    eventSource.onerror = (error) => {
+      console.error("SSE 연결 에러 발생:", error);
+      // 필요 시 eventSource.close() 후 재연결 로직을 넣을 수 있습니다.
+    };
+
+    // 3. 언마운트 시 클린업
+    return () => {
+      console.log("SSE 연결을 종료합니다.");
+      eventSource.close();
+    };
   }, []);
 
   const filteredAccounts = useMemo(() => {
@@ -246,10 +269,10 @@ const AdminDashboard = () => {
 // Sub Components
 // ======================================
 
-const MonitoringTab = ({ 
-  showAlert, setShowAlert, alertCount, setAlertCount, 
-  securityLogs, totalViolationCount, handleRunMaskingAudit, 
-  isAuditing, threatTrendData, summaryData 
+const MonitoringTab = ({
+  showAlert, setShowAlert, alertCount, setAlertCount,
+  securityLogs, totalViolationCount, handleRunMaskingAudit,
+  isAuditing, threatTrendData, summaryData
 }) => {
 
   const currentSuccessRate = summaryData?.maskingSuccessRate ?? 0;
@@ -308,7 +331,7 @@ const MonitoringTab = ({
           {isAuditing ? "감사 진행 중..." : "실시간 보안 감사 실행"}
         </button>
       </div>
-      
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-5 border-b border-gray-100 font-bold text-gray-700">보안 탐지 히스토리 (최근 20건)</div>
         <div className="overflow-x-auto">
@@ -391,11 +414,10 @@ const AccountsTab = ({ selectedRole, setSelectedRole, filteredAccounts, accountC
           <button
             key={role.value}
             onClick={() => setSelectedRole(role.value)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-              selectedRole === role.value
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedRole === role.value
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {role.label}
           </button>
