@@ -76,7 +76,7 @@ const AdminDashboard = () => {
   // 위험 추이 데이터를 가져오는 함수
   const fetchThreatTrend = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/admin/security/threat-trend', { withCredentials: true });
+      const response = await axios.get('/api/admin/security/threat-trend', { withCredentials: true });
       setThreatTrendData(response.data);
     } catch (error) {
       console.error("위험 추이 로드 실패:", error);
@@ -88,9 +88,9 @@ const AdminDashboard = () => {
       try {
         const [logsRes, countRes] = await Promise.all([
           axios.get('/api/sse/logs', { withCredentials: true }),
-          axios.get('/api/admin/security/violations/count', { withCredentials: true }) // ✅ 백엔드에 추가한 API
-          axios.get('http://localhost:8080/api/sse/logs', { withCredentials: true }),
-          axios.get('http://localhost:8080/api/admin/security/violations/count', { withCredentials: true })
+          axios.get('/api/admin/security/violations/count', { withCredentials: true }), // ✅ 백엔드에 추가한 API
+          axios.get('/api/sse/logs', { withCredentials: true }),
+          axios.get('/api/admin/security/violations/count', { withCredentials: true })
         ]);
         setSecurityLogs(logsRes.data.map(log => formatLogData(log)).slice(0, 20));
         setTotalViolationCount(countRes.data);
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
 
     const fetchSummaryData = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/admin/security/summary', { withCredentials: true });
+        const response = await axios.get('/api/admin/security/summary', { withCredentials: true });
         setSummaryData(response.data);
       } catch (error) {
         console.error("요약 데이터 로드 실패:", error);
@@ -136,7 +136,7 @@ const AdminDashboard = () => {
     fetchThreatTrend();
     fetchSummaryData();
 
-    const eventSource = new EventSource('http://localhost:8080/api/sse/connect/admin', { withCredentials: true });
+    const eventSource = new EventSource('/api/sse/connect/admin', { withCredentials: true });
 
     eventSource.addEventListener('security-alert', (event) => {
       const data = JSON.parse(event.data);
@@ -161,7 +161,7 @@ const AdminDashboard = () => {
     if (!window.confirm("전체 결제 데이터의 마스킹 무결성을 전수 조사하시겠습니까?")) return;
     setIsAuditing(true);
     try {
-      const response = await axios.post('http://localhost:8080/api/admin/security/masking-audits/run', {}, { withCredentials: true });
+      const response = await axios.post('/api/admin/security/masking-audits/run', {}, { withCredentials: true });
       alert(`보안 점검 완료! 총 ${response.data.checkedCount}건의 데이터를 확인했습니다.`);
     } catch (error) {
       console.error("보안 감사 실행 실패:", error);
