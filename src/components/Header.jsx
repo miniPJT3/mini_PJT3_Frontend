@@ -19,7 +19,7 @@ const Header = () => {
 
       try {
         // 서버에서 현재 로그인된 유저 정보를 가져오는 API
-        const response = await axios.get('http://localhost:8080/api/member/me', {
+        const response = await axios.get('/api/member/me', {
           withCredentials: true
         }); 
         
@@ -44,7 +44,7 @@ const Header = () => {
     try {
       //] 서버 측 로그아웃 처리 (쿠키 만료 요청)
       // POST 요청 시에도 쿠키를 함께 보내야 서버에서 어떤 사용자인지 알고 로그 남김
-      await axios.post('http://localhost:8080/api/auth/logout', {}, {
+      await axios.post('/api/auth/logout', {}, {
         withCredentials: true
       });
     } catch (err) {

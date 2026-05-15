@@ -18,7 +18,7 @@ const AdditionalInfo = () => {
     try {
       //  백엔드 MemberController의 PATCH API 호출
       const response = await axios.patch(
-        'http://localhost:8080/api/member/additional-info',
+        '/api/member/additional-info',
         { 
           phone: phone, 
           role: role 
