@@ -22,5 +22,9 @@ export const paymentApi = {
     getPendingList: () => api.get('/payments/seller/history'),
 
     // 5. 판매자 최종 승인 처리 (판매자 ID 10은 백엔드에서 고정 처리함)
-    approvePayment: (payUuid) => api.post(`/payments/approve/${payUuid}`)
+    approvePayment: (payUuid) => api.post(`/payments/approve/${payUuid}`),
+
+    // 🥊 6. 결제 및 가상계좌 만료 처리 (추가됨)
+    // 백엔드 컨트롤러의 @PostMapping("/{payUuid}/expire")와 연결됩니다.
+    expirePayment: (payUuid) => api.post(`/payments/${payUuid}/expire`)
 };

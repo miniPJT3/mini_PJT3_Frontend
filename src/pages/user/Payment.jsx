@@ -13,6 +13,8 @@ const Payment = () => {
 
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [quantity, setQuantity] = useState(1);
+
+    const SHOW_ORDERER_INFO = false; // false면 주문자 정보 화면 숨김
     
     // 3. 초기 상태를 빈 값이 아닌 userInfo의 값으로 설정 (방어 코드 포함)
     const [orderer, setOrderer] = useState({ 
@@ -49,9 +51,12 @@ const Payment = () => {
     }, []);
 
     useEffect(() => {
-        const isValid = selectedProduct && orderer.name && orderer.email;
-        setIsFormValid(isValid);
-    }, [selectedProduct, orderer]);
+        const isValid = SHOW_ORDERER_INFO
+            ? selectedProduct && orderer.name && orderer.email
+            : selectedProduct;
+
+        setIsFormValid(!!isValid);
+    }, [selectedProduct, orderer, SHOW_ORDERER_INFO]);
 
     const handleIssueAccount = async () => {
         const requestData = {
@@ -142,31 +147,33 @@ const Payment = () => {
                     </div>
                 </section>
 
-                <section className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                    <h2 className="text-xl font-semibold mb-4">주문자 정보</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm text-gray-600 mb-1 font-medium">이름</label>
-                            <input
-                                type="text"
-                                placeholder="홍길동"
-                                value={orderer.name} // 5. 상태값 바인딩
-                                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                onChange={(e) => setOrderer({ ...orderer, name: e.target.value })}
-                            />
+                {SHOW_ORDERER_INFO && (
+                    <section className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <h2 className="text-xl font-semibold mb-4">주문자 정보</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1 font-medium">이름</label>
+                                <input
+                                    type="text"
+                                    placeholder="홍길동"
+                                    value={orderer.name}
+                                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    onChange={(e) => setOrderer({ ...orderer, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm text-gray-600 mb-1 font-medium">이메일</label>
+                                <input
+                                    type="email"
+                                    placeholder="example@email.com"
+                                    value={orderer.email}
+                                    className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                    onChange={(e) => setOrderer({ ...orderer, email: e.target.value })}
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm text-gray-600 mb-1 font-medium">이메일</label>
-                            <input
-                                type="email"
-                                placeholder="example@email.com"
-                                value={orderer.email} // 5. 상태값 바인딩
-                                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                onChange={(e) => setOrderer({ ...orderer, email: e.target.value })}
-                            />
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                )}
             </div>
 
             <aside className="w-full md:w-80">

@@ -12,39 +12,57 @@ const Header = () => {
     navigate('/login');
   };
 
-  // 디버깅용: 콘솔에서 데이터가 어떻게 찍히는지 확인 (나중에 지우세요)
-  console.log("로그인 여부:", isLoggedIn);
-  console.log("유저 정보:", userInfo);
+  // 🥊 로고 및 홈 버튼 클릭 시 이동할 최적의 경로
+  const getHomePath = () => {
+    if (!isLoggedIn) return '/login';
+    switch (userInfo?.role) {
+      case 'ADMIN': return '/admin/dashboard';
+      case 'SELLER': return '/seller/dashboard';
+      case 'USER': return '/user/home';
+      default: return '/';
+    }
+  };
 
   return (
     <header className="bg-white shadow-md mb-6">
       <nav className="container mx-auto flex justify-between items-center p-4">
-        {/* ⭐ 로고 수정 부분: Link 태그를 div로 변경하고 cursor-default 추가 */}
-        <div className="flex items-center gap-2 cursor-default">
+        {/* 🥊 서비스 로고: 역할별 메인으로 이동 */}
+        <Link to={getHomePath()} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="text-2xl font-bold text-indigo-700 tracking-tight">
             가상계좌 결제 시스템
             <span className="block text-xs font-normal text-gray-400">Virtual Account Payment</span>
           </div>
-        </div>
+        </Link>
         
         <div className="flex gap-6 items-center">
-          {/* ⭐ isLoggedIn이 true일 때만 메뉴 노출 */}
           {isLoggedIn ? (
             <>
               <div className="hidden md:flex gap-8 text-sm font-bold text-gray-600">
-                {/* role이 'USER'인 경우만 메뉴 출력 */}
+                
+                {/* 🥊 1. 관리자(ADMIN): 모든 관제를 한눈에 */}
+                {userInfo?.role === 'ADMIN' && (
+                  <>
+                    <Link to="/admin/dashboard" className="hover:text-indigo-600 transition-colors">홈</Link>
+                  </>
+                )}
+
+                {/* 🥊 2. 판매자(SELLER): 정산 및 현황 중심 */}
+                {userInfo?.role === 'SELLER' && (
+                  <>
+                    <Link to="/seller/dashboard" className="hover:text-indigo-600 transition-colors">홈</Link>
+                  </>
+                )}
+
+                {/* 🥊 3. 일반 사용자(USER): 주문 및 이력 중심 */}
                 {userInfo?.role === 'USER' && (
                   <>
+                    <Link to="/user/home" className="hover:text-indigo-600 transition-colors">홈</Link>
                     <Link to="/user/history" className="hover:text-indigo-600 transition-colors">나의 결제이력</Link>
                     <Link to="/user/payment" className="hover:text-indigo-600 transition-colors">주문하기</Link>
                   </>
                 )}
                 
-                {userInfo?.role === 'SELLER' && (
-                  <Link to="/seller/dashboard" className="hover:text-indigo-600 transition-colors">판매 대시보드</Link>
-                )}
               </div>
-
               {/* 유저 정보 및 로그아웃 버튼 */}
               <div className="flex items-center gap-4 border-l pl-6 ml-2">
                 <div className="text-right">

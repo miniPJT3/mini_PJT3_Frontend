@@ -8,9 +8,6 @@ const Home = () => {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-12 py-10">
-      {/* 지호님! Header는 App.js에서 공통으로 보여주고 있으므로 
-         여기서는 삭제하는 것이 맞습니다. 그래야 두 개가 안 떠요! 
-      */}
 
       {/* 상단 타이틀 섹션 */}
       <div className="text-center space-y-4">

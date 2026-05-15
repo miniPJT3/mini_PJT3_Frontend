@@ -62,6 +62,8 @@ function SellerDashboardPage() {
   const weekEndDate = addDays(weekStartDate, 6);
   const monthRange = getMonthRange(selectedMonth);
 
+  const SHOW_SELLER_ID_CARD = false; // false면 판매자 ID 화면 숨김
+
   useEffect(() => {
     // 통계 탭일 때만 데이터 페칭 수행
     if (activeTab === 'STAT') {
@@ -113,15 +115,17 @@ function SellerDashboardPage() {
           </p>
         </div>
 
-        <div className="seller-id-card">
-          <label htmlFor="sellerId">판매자 ID</label>
-          <input
-            id="sellerId"
-            type="number"
-            value={sellerId}
-            readOnly
-          />
-        </div>
+        {SHOW_SELLER_ID_CARD && (
+          <div className="seller-id-card">
+            <label htmlFor="sellerId">판매자 ID</label>
+            <input
+              id="sellerId"
+              type="number"
+              value={sellerId}
+              readOnly
+            />
+          </div>
+        )}
       </section>
 
       {/* (2) 🥊 상단 메인 탭 메뉴 (수정 및 추가 부분) */}
