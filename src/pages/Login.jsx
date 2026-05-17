@@ -11,10 +11,12 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 1. 구글 로그인: 클릭 시 백엔드 ALB OAuth 엔드포인트로 리다이렉트
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    window.location.href = "http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com/api/oauth2/authorization/google";
   };
 
+  // 2. 일반 로그인 처리
   const handleLogin = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -22,25 +24,24 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
+      //  주소를 구글 경로에서 일반 로그인 처리 엔드포인트(/api/auth/login)로 변경했습니다.
+      const response = await axios.post('http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com/api/auth/login', {
         loginId: loginId,
         password: password
       }, {
-        withCredentials: true 
+        withCredentials: true // 백엔드 세션 및 쿠키 수신을 위해 필수 유지
       });
 
       const userData = response.data;
       console.log("로그인 성공! 유저 정보:", userData);
 
+      // Zustand 전역 상태에 유저 정보 저장
       login(userData);
 
-      // 리다이렉트 분기 로직 대폭 단순화
-      // Role이 GUEST(신규 가입자)인 경우만 추가 정보 페이지로 
-      
+      // Role 분기별 대시보드 리다이렉트 로직
       if (userData.role === 'GUEST') {
         navigate('/additional-info');
       } else {
-        // 이미 가입된 사용자는 각 권한에 맞는 페이지로 즉시 이동
         switch (userData.role) {
           case 'ADMIN':
             navigate('/admin/dashboard');
