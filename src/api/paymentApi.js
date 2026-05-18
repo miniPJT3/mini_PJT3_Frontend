@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 공통 설정이 담긴 인스턴스 생성
 const api = axios.create({
-  baseURL: '/api', 
+  baseURL: 'http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com',
   withCredentials: true, // 세션 로그인을 유지하기 위해 필수!
 });
 
@@ -24,7 +24,7 @@ export const paymentApi = {
     // 5. 판매자 최종 승인 처리 (판매자 ID 10은 백엔드에서 고정 처리함)
     approvePayment: (payUuid) => api.post(`/payments/approve/${payUuid}`),
 
-    // 🥊 6. 결제 및 가상계좌 만료 처리 (추가됨)
-    // 백엔드 컨트롤러의 @PostMapping("/{payUuid}/expire")와 연결됩니다.
+    // 결제 및 가상계좌 만료 처리
+    // 백엔드 컨트롤러의 @PostMapping("/{payUuid}/expire")와 연결
     expirePayment: (payUuid) => api.post(`/payments/${payUuid}/expire`)
 };
