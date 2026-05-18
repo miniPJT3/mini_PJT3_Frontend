@@ -13,7 +13,7 @@ const Login = () => {
 
   // 구글 로그인: 클릭 시 백엔드 ALB OAuth 엔드포인트로 리다이렉트
   const handleGoogleLogin = () => {
-    window.location.href = "/api/oauth2/authorization/google";
+    window.location.href = "http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com/api/oauth2/authorization/google";
   };
 
   //일반 로그인 처리 부분
@@ -24,8 +24,7 @@ const Login = () => {
     setIsSubmitting(true);
 
     try {
-      //  주소를 구글 경로에서 일반 로그인 처리 엔드포인트(/api/auth/login)로 변경했습니다.
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post('http://localhost:8080/api/auth/login', {
         loginId: loginId,
         password: password
       }, {
