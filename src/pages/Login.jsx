@@ -25,7 +25,7 @@ const Login = () => {
 
     try {
       //  주소를 구글 경로에서 일반 로그인 처리 엔드포인트(/api/auth/login)로 변경했습니다.
-      const response = await axios.post('http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com/api/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         loginId: loginId,
         password: password
       }, {
