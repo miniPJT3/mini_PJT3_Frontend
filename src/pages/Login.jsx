@@ -11,12 +11,12 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. 구글 로그인: 클릭 시 백엔드 ALB OAuth 엔드포인트로 리다이렉트
+  // 구글 로그인: 클릭 시 백엔드 ALB OAuth 엔드포인트로 리다이렉트
   const handleGoogleLogin = () => {
     window.location.href = "http://team01-alb-1090661033.ap-northeast-2.elb.amazonaws.com/api/oauth2/authorization/google";
   };
 
-  // 2. 일반 로그인 처리
+  //일반 로그인 처리 부분
   const handleLogin = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
